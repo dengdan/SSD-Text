@@ -1,4 +1,6 @@
 #encoding=utf-8
+import matplotlib as mpl
+mpl.use('Agg')
 import util;
 import numpy as np;
 class ICDAR2013TrainingData(object):
@@ -16,7 +18,7 @@ class ICDAR2013TrainingData(object):
         self.data = [[img, bboxes] for(img, bboxes) in zip(images, bboxes)]
 
     def get_images_and_gt(self, data_path, gt_path):
-        image_names = util.io.ls(data_path, '.jpg');
+        image_names = util.io.ls(data_path, '.jpg')[0:10];
         print "%d images found in %s"%(len(image_names), data_path);
         images = [];
         bboxes = [];
@@ -24,6 +26,7 @@ class ICDAR2013TrainingData(object):
             path = util.io.join_path(data_path, image_name);
             print "\treading image: %d/%d"%(idx, len(image_names));
             image = util.img.imread(path, rgb = True);
+            image = image / 255.0
             images.append(image);
             image_name = util.str.split(image_name, '.')[0];
             gt_name = 'gt_' + image_name + '.txt';
@@ -62,19 +65,14 @@ class ICDAR2013TrainingData(object):
         image, bboxes = self.data[self.image_idx];
         labels = [1] * len(bboxes);
         labels = np.reshape(labels, [-1, 1]);
-        return image, [bboxes], labels;
+        return image, bboxes, labels;
 
 if __name__ == "__main__":
-
-
     import numpy as np
     import tensorflow as tf
-    tf.device('/cpu:0')
     import time
     import util
     util.mod.add_to_path('..')
-    import pdb
-    pdb.set_trace()
     from preprocessing.preprocessing_factory  import get_preprocessing
     data_provider = ICDAR2013TrainingData();
     
@@ -85,8 +83,8 @@ if __name__ == "__main__":
         sess = tf.Session();
         sess.as_default();
         out_shape = [150, 150]
-        images = tf.placeholder("float", name = 'images', shape = [None, None, 3])
-        bboxes = tf.placeholder("float", name = 'bboxes', shape = [1, None, 4])
+        images = tf.placeholder("float32", name = 'images', shape = [None, None, 3])
+        bboxes = tf.placeholder("float32", name = 'bboxes', shape = [None, 4])
         labels = tf.placeholder('int32', name = 'labels', shape = [None, 1])
         
         sampled_image, sampled_labels, sampled_bboxes = fn(images, labels, bboxes, out_shape);
@@ -98,8 +96,9 @@ if __name__ == "__main__":
             image_data, bbox_data, label_data = data_provider.get_data();
             feed_dict = {images: image_data, labels: label_data, bboxes: bbox_data}
             I, L, B = sess.run([sampled_image, sampled_labels, sampled_bboxes], feed_dict = feed_dict)
+#            import pdb
+#            pdb.set_trace()
             I = np.asarray(I, dtype = np.uint8);
-            util.cit(I)
             B *= 150;
             I_box = I.copy()
             for bbox in B:

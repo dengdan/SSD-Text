@@ -45,9 +45,6 @@ def get_preprocessing(is_training=False):
       ValueError: If Preprocessing `name` is not recognized.
     """
 
-    if name not in preprocessing_fn_map:
-        raise ValueError('Preprocessing name [%s] was not recognized' % name)
-
     def preprocessing_fn(image, labels, bboxes,
                          out_shape, data_format='NHWC', **kwargs):
         return ssd_vgg_preprocessing.preprocess_image(
