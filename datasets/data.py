@@ -4,10 +4,10 @@ mpl.use('Agg')
 import util;
 import numpy as np;
 class ICDAR2013TrainingData(object):
-    def __init__(self):
-        root_dir = '~/dataset_nfs/ICDAR2015/Challenge2.Task123/'
-        training_data_dir = 'Challenge2_Training_Task12_Images'
+    def __init__(self, root_dir = '~/dataset_nfs/ICDAR2015/Challenge2.Task123/',
+        training_data_dir = 'Challenge2_Training_Task12_Images',
         training_gt_dir = 'Challenge2_Training_Task1_GT'
+):
 #        test_data_dir = 'Challenge2_Test_Task12_Images'
 #        test_gt_dir = 'Challenge2_Test_Task1_GT'
         self.image_idx = -1;
@@ -18,7 +18,7 @@ class ICDAR2013TrainingData(object):
         self.data = [[img, bboxes] for(img, bboxes) in zip(images, bboxes)]
 
     def get_images_and_gt(self, data_path, gt_path):
-        image_names = util.io.ls(data_path, '.jpg')[0:10];
+        image_names = util.io.ls(data_path, '.jpg')#[0:10];
         print "%d images found in %s"%(len(image_names), data_path);
         images = [];
         bboxes = [];
@@ -96,8 +96,6 @@ if __name__ == "__main__":
             image_data, bbox_data, label_data = data_provider.get_data();
             feed_dict = {images: image_data, labels: label_data, bboxes: bbox_data}
             I, L, B = sess.run([sampled_image, sampled_labels, sampled_bboxes], feed_dict = feed_dict)
-#            import pdb
-#            pdb.set_trace()
             I = np.asarray(I, dtype = np.uint8);
             B *= 150;
             I_box = I.copy()

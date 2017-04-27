@@ -130,18 +130,11 @@ tf.app.flags.DEFINE_float(
 # Dataset Flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_string(
-    'dataset_name', 'imagenet', 'The name of the dataset to load.')
+    'dataset_name', 'icdar', 'The name of the dataset to load.')
 tf.app.flags.DEFINE_integer(
-    'num_classes', 21, 'Number of classes to use in the dataset.')
+    'num_classes', 2, 'Number of classes to use in the dataset.')
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'train', 'The name of the train/test split.')
-tf.app.flags.DEFINE_string(
-    'dataset_dir', None, 'The directory where the dataset files are stored.')
-tf.app.flags.DEFINE_integer(
-    'labels_offset', 0,
-    'An offset for the labels in the dataset. This flag is primarily used to '
-    'evaluate the VGG and ResNet architectures which do not use a background '
-    'class for the ImageNet dataset.')
 tf.app.flags.DEFINE_string(
     'model_name', 'ssd_300_vgg', 'The name of the architecture to train.')
 tf.app.flags.DEFINE_string(
@@ -182,9 +175,6 @@ FLAGS = tf.app.flags.FLAGS
 # Main training routine.
 # =========================================================================== #
 def main(_):
-    if not FLAGS.dataset_dir:
-        raise ValueError('You must supply the dataset directory with --dataset_dir')
-
     tf.logging.set_verbosity(tf.logging.DEBUG)
     with tf.Graph().as_default():
         # Config model_deploy. Keep TF Slim Models structure.
@@ -199,10 +189,6 @@ def main(_):
         with tf.device(deploy_config.variables_device()):
             global_step = slim.create_global_step()
 
-        # Select the dataset.
-        dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
-
         # Get the SSD network and its anchors.
         ssd_class = nets_factory.get_network(FLAGS.model_name)
         ssd_params = ssd_class.default_params._replace(num_classes=FLAGS.num_classes)
@@ -211,9 +197,7 @@ def main(_):
         ssd_anchors = ssd_net.anchors(ssd_shape)
 
         # Select the preprocessing function.
-        preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
-        image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-            preprocessing_name, is_training=True)
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(is_training=True)
 
         tf_utils.print_configuration(FLAGS.__flags, ssd_params,
                                      dataset.data_sources, FLAGS.train_dir)
@@ -222,16 +206,11 @@ def main(_):
         # =================================================================== #
         with tf.device(deploy_config.inputs_device()):
             with tf.name_scope(FLAGS.dataset_name + '_data_provider'):
-                provider = slim.dataset_data_provider.DatasetDataProvider(
-                    dataset,
-                    num_readers=FLAGS.num_readers,
-                    common_queue_capacity=20 * FLAGS.batch_size,
-                    common_queue_min=10 * FLAGS.batch_size,
-                    shuffle=True)
             # Get for SSD network: image, labels, bboxes.
-            [image, shape, glabels, gbboxes] = provider.get(['image', 'shape',
-                                                             'object/label',
-                                                             'object/bbox'])
+            image = tf.placeholder("float32", name = 'images', shape = [None, None, 3])
+            gbboxes = tf.placeholder("float32", name = 'bboxes', shape = [None, 4])
+            glabels = tf.placeholder('int32', name = 'labels', shape = [None, 1])
+            shape = tf.shape(image)
             # Pre-processing image, labels and bboxes.
             image, glabels, gbboxes = \
                 image_preprocessing_fn(image, glabels, gbboxes,
@@ -366,7 +345,7 @@ def main(_):
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
         config = tf.ConfigProto(log_device_placement=False,
                                 gpu_options=gpu_options)
-        saver = tf.train.Saver(max_to_keep=5,
+        saver = tf.train.Saver(max_to_keep=500,
                                keep_checkpoint_every_n_hours=1.0,
                                write_version=2,
                                pad_step_number=False)
