@@ -250,10 +250,12 @@ def average_precision_voc07(precision, recall, name=None):
 
         # Split the integral into 10 bins.
         l_aps = []
-        for t in np.arange(0., 1.1, 0.1):
+        recalls = np.arange(0., 1.1, 0.1)
+#        recalls = [0.85]
+        for t in recalls:
             mask = tf.greater_equal(recall, t)
             v = tf.reduce_max(tf.boolean_mask(precision, mask))
-            l_aps.append(v / 11.)
+            l_aps.append(v/float(len(recalls)))
         ap = tf.add_n(l_aps)
         return ap
 

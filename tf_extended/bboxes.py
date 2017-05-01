@@ -352,6 +352,7 @@ def bboxes_matching_batch(labels, scores, bboxes,
        fp: (B, N)-shaped boolean Tensor containing with False Positives.
     """
     # Dictionaries as inputs.
+
     if isinstance(scores, dict) or isinstance(bboxes, dict):
         with tf.name_scope(scope, 'bboxes_matching_batch_dict'):
             d_n_gbboxes = {}
@@ -423,8 +424,8 @@ def bboxes_filter_overlap(labels, bboxes,
             labels = tf.where(mask, labels, -labels)
             # bboxes = tf.where(mask, bboxes, bboxes)
         else:
-            labels = tf.boolean_mask(labels, mask)
-            bboxes = tf.boolean_mask(bboxes, mask)
+            labels = tf.boolean_mask(labels, mask, name = 'label_mask')
+            bboxes = tf.boolean_mask(bboxes, mask, name = 'bbox_mask')
         return labels, bboxes
 
 

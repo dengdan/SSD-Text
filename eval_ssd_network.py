@@ -24,7 +24,7 @@ import tensorflow as tf
 import tf_extended as tfe
 import tf_utils
 from tensorflow.python.framework import ops
-
+import util
 from datasets import dataset_factory
 from nets import nets_factory
 from preprocessing import preprocessing_factory
@@ -62,8 +62,10 @@ tf.app.flags.DEFINE_boolean(
 # =========================================================================== #
 # Main evaluation flags.
 # =========================================================================== #
+size = 300
+postfix = '-new-ap'
 tf.app.flags.DEFINE_integer(
-    'num_classes', 21, 'Number of classes to use in the dataset.')
+    'num_classes', 2, 'Number of classes to use in the dataset.')
 tf.app.flags.DEFINE_integer(
     'batch_size', 1, 'The number of samples in each batch.')
 tf.app.flags.DEFINE_integer(
@@ -71,23 +73,24 @@ tf.app.flags.DEFINE_integer(
     'Max number of batches to evaluate by default use all.')
 tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
+
 tf.app.flags.DEFINE_string(
-    'checkpoint_path', '/tmp/tfmodel/',
+    'checkpoint_path', util.io.get_absolute_path('~/temp_nfs/text-detection-with-wbr-%d%s/'%(size, postfix)),
     'The directory where the model was written to or an absolute path to a '
     'checkpoint file.')
 tf.app.flags.DEFINE_string(
-    'eval_dir', '/tmp/tfmodel/', 'Directory where the results are saved to.')
+    'eval_dir', util.io.get_absolute_path('~/temp_nfs/text-detection-with-wbr-%d%s/eval'%(size, postfix)), 'Directory where the results are saved to.')
 tf.app.flags.DEFINE_integer(
     'num_preprocessing_threads', 4,
     'The number of threads used to create the batches.')
 tf.app.flags.DEFINE_string(
-    'dataset_name', 'imagenet', 'The name of the dataset to load.')
+    'dataset_name', 'icdar2013', 'The name of the dataset to load.')
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'test', 'The name of the train/test split.')
 tf.app.flags.DEFINE_string(
-    'dataset_dir', None, 'The directory where the dataset files are stored.')
+    'dataset_dir', util.io.get_absolute_path('~/dataset_nfs/SSD-tf/ICDAR'), 'The directory where the dataset files are stored.')
 tf.app.flags.DEFINE_string(
-    'model_name', 'inception_v3', 'The name of the architecture to evaluate.')
+    'model_name', 'ssd_%d_vgg'%(size), 'The name of the architecture to evaluate.')
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
     'as `None`, then the model_name flag is used.')
@@ -98,7 +101,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_float(
     'gpu_memory_fraction', 0.1, 'GPU memory fraction to use.')
 tf.app.flags.DEFINE_boolean(
-    'wait_for_checkpoints', False, 'Wait for new checkpoints in the eval loop.')
+    'wait_for_checkpoints', True, 'Wait for new checkpoints in the eval loop.')
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -279,11 +282,6 @@ def main(_):
             op = tf.Print(op, [mAP], summary_name)
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
-        # for i, v in enumerate(l_precisions):
-        #     summary_name = 'eval/precision_at_recall_%.2f' % LIST_RECALLS[i]
-        #     op = tf.summary.scalar(summary_name, v, collections=[])
-        #     op = tf.Print(op, [v], summary_name)
-        #     tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
         # Split into values and updates ops.
         names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(dict_metrics)
@@ -336,7 +334,7 @@ def main(_):
                 num_evals=num_batches,
                 eval_op=list(names_to_updates.values()),
                 variables_to_restore=variables_to_restore,
-                eval_interval_secs=60,
+                eval_interval_secs=3600,
                 max_number_of_evaluations=np.inf,
                 session_config=config,
                 timeout=None)

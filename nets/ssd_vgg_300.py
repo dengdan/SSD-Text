@@ -111,12 +111,18 @@ class SSDNet(object):
         #               (162., 213.),
         #               (213., 264.),
         #               (264., 315.)],
-        anchor_ratios=[[2, .5],
-                       [2, .5, 3, 1./3],
-                       [2, .5, 3, 1./3],
-                       [2, .5, 3, 1./3],
-                       [2, .5],
-                       [2, .5]],
+        anchor_ratios=[[2, 5],
+               [2, 5, 7, 9],
+               [2, 5, 7, 9],
+               [2, 5, 7, 9],
+               [2, 7],
+               [2, 7]],
+#        anchor_ratios=[[2, .5],
+#                       [2, .5, 3, 1./3],
+#                       [2, .5, 3, 1./3],
+#                       [2, .5, 3, 1./3],
+#                       [2, .5],
+#                       [2, .5]],
         anchor_steps=[8, 16, 32, 64, 100, 300],
         anchor_offset=0.5,
         normalizations=[20, -1, -1, -1, -1, -1],
@@ -341,7 +347,7 @@ def ssd_anchor_one_layer(img_shape,
 
     # Compute relative height and width.
     # Tries to follow the original implementation of SSD for the order.
-    num_anchors = len(sizes) + len(ratios)
+    num_anchors = len(sizes) + len(ratios) # two defaults +  reshaped to ratios
     h = np.zeros((num_anchors, ), dtype=dtype)
     w = np.zeros((num_anchors, ), dtype=dtype)
     # Add first anchor boxes with ratio=1.
@@ -418,14 +424,14 @@ def ssd_multibox_layer(inputs,
                            scope='conv_loc')
     loc_pred = custom_layers.channel_to_last(loc_pred)
     loc_pred = tf.reshape(loc_pred,
-                          tensor_shape(loc_pred, 4)[:-1]+[num_anchors, 4])
+                          tensor_shape(loc_pred, 4)[:-1]+[num_anchors, 4]) # reshaped to (batch_size, h, w, num_anchors, 4)
     # Class prediction.
     num_cls_pred = num_anchors * num_classes
     cls_pred = slim.conv2d(net, num_cls_pred, [3, 3], activation_fn=None,
                            scope='conv_cls')
     cls_pred = custom_layers.channel_to_last(cls_pred)
     cls_pred = tf.reshape(cls_pred,
-                          tensor_shape(cls_pred, 4)[:-1]+[num_anchors, num_classes])
+                          tensor_shape(cls_pred, 4)[:-1]+[num_anchors, num_classes])# reshaped to (batch_size, h, w, num_anchors, num_classes)
     return cls_pred, loc_pred
 
 
@@ -468,7 +474,7 @@ def ssd_net(inputs,
         net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
         end_points['block5'] = net
         net = slim.max_pool2d(net, [3, 3], stride=1, scope='pool5')
-
+        
         # Additional SSD blocks.
         # Block 6: let's dilate the hell out of it!
         net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')

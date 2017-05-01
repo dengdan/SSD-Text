@@ -3,19 +3,31 @@ import matplotlib as mpl
 mpl.use('Agg')
 import util;
 import numpy as np;
-class ICDAR2013TrainingData(object):
+class ICDAR2013Data(object):
     def __init__(self, root_dir = '~/dataset_nfs/ICDAR2015/Challenge2.Task123/',
         training_data_dir = 'Challenge2_Training_Task12_Images',
         training_gt_dir = 'Challenge2_Training_Task1_GT'
-):
-#        test_data_dir = 'Challenge2_Test_Task12_Images'
-#        test_gt_dir = 'Challenge2_Test_Task1_GT'
+, training_data = False, test_data = True):
+        test_data_dir = 'Challenge2_Test_Task12_Images'
+        test_gt_dir = 'Challenge2_Test_Task1_GT'
         self.image_idx = -1;
-        self.training_images, self.training_bboxes = self.get_images_and_gt(util.io.join_path(root_dir, training_data_dir), util.io.join_path(root_dir, training_gt_dir));
-#        self.test_images, self.test_bboxes = self.get_images_and_gt(util.io.join_path(root_dir, test_data_dir), util.io.join_path(root_dir, test_gt_dir));
-        images = self.training_images# + self.test_images;
-        bboxes = self.training_bboxes# + self.test_bboxes;
-        self.data = [[img, bboxes] for(img, bboxes) in zip(images, bboxes)]
+        images = []
+        bboxes = []
+        image_names = []
+        if training_data:
+            self.training_images, self.training_bboxes, self.training_image_names = self.get_images_and_gt(util.io.join_path(root_dir, training_data_dir), util.io.join_path(root_dir, training_gt_dir));
+            images += self.training_images
+            bboxes += self.training_bboxes
+            image_names += self.training_image_names
+                    
+        if test_data:
+            self.test_images, self.test_bboxes, self.test_image_names = self.get_images_and_gt(util.io.join_path(root_dir, test_data_dir), util.io.join_path(root_dir, test_gt_dir));
+            images += self.test_images
+            bboxes += self.test_bboxes
+            image_names += self.test_image_names;
+            
+        self.num_images = len(images)
+        self.data = [[img, bboxes, image_name] for(img, bboxes, image_name) in zip(images, bboxes, image_names)]
 
     def get_images_and_gt(self, data_path, gt_path):
         image_names = util.io.ls(data_path, '.jpg')#[0:10];
@@ -26,7 +38,7 @@ class ICDAR2013TrainingData(object):
             path = util.io.join_path(data_path, image_name);
             print "\treading image: %d/%d"%(idx, len(image_names));
             image = util.img.imread(path, rgb = True);
-            image = image / 255.0
+#            image = image / 255.0
             images.append(image);
             image_name = util.str.split(image_name, '.')[0];
             gt_name = 'gt_' + image_name + '.txt';
@@ -41,13 +53,16 @@ class ICDAR2013TrainingData(object):
                 gt = util.str.split(gt, ' ');
                 box =[int(gt[i]) for i in range(4)];
                 x1, y1, x2, y2  = box;
+                print (x2 - x1) *1. / (y2 - y1)
                 box = [y1 / h, x1 / w, y2 / h,  x2 / w];
                 bbox_gt.append(box);
+            bbox_gt = np.asarray(bbox_gt)
             bboxes.append(bbox_gt);
+            image_names[idx] = image_name
 #            if idx >= 1:
 #                break;
             
-        return images, bboxes;
+        return images, bboxes, image_names;
         
     def vis_data(self):
         for image, bboxes in self.data:
@@ -62,10 +77,10 @@ class ICDAR2013TrainingData(object):
         if self.image_idx >= len(self.data):
             util.np.shuffle(self.data);
             self.image_idx = 0;
-        image, bboxes = self.data[self.image_idx];
+        image, bboxes, name = self.data[self.image_idx];
         labels = [1] * len(bboxes);
         labels = np.reshape(labels, [-1, 1]);
-        return image, bboxes, labels;
+        return image, bboxes, labels, name;
 
 if __name__ == "__main__":
     import numpy as np
@@ -74,7 +89,7 @@ if __name__ == "__main__":
     import util
     util.mod.add_to_path('..')
     from preprocessing.preprocessing_factory  import get_preprocessing
-    data_provider = ICDAR2013TrainingData();
+    data_provider = ICDAR2013Data(training_data = True, test_data = True);
     
     util.proc.set_proc_name('proc-test');
     
@@ -90,7 +105,7 @@ if __name__ == "__main__":
         sampled_image, sampled_labels, sampled_bboxes = fn(images, labels, bboxes, out_shape);
         step = 0;
         data = []
-        while step < 10:
+        while step < len(data_provider.num_images):
             step += 1;
             start = time.time();
             image_data, bbox_data, label_data = data_provider.get_data();

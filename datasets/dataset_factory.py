@@ -20,7 +20,7 @@ from __future__ import print_function
 
 from datasets import cifar10
 from datasets import imagenet
-
+from datasets import icdar2013
 from datasets import pascalvoc_2007
 from datasets import pascalvoc_2012
 
@@ -29,6 +29,7 @@ datasets_map = {
     'imagenet': imagenet,
     'pascalvoc_2007': pascalvoc_2007,
     'pascalvoc_2012': pascalvoc_2012,
+    'icdar2013':icdar2013
 }
 
 
