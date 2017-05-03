@@ -39,7 +39,7 @@ tf.app.flags.DEFINE_float(
 # =========================================================================== #
 # General Flags.
 # =========================================================================== #
-size = 300
+size = 512
 tf.app.flags.DEFINE_string('train_dir', util.io.get_absolute_path('~/temp_nfs/text-detection-with-wbr-%d-new-ap/'%(size)),'Directory where checkpoints and event logs are written to.')
 tf.app.flags.DEFINE_integer('num_clones', 1,'Number of model clones to deploy.')
 tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
@@ -146,7 +146,7 @@ tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
     'as `None`, then the model_name flag is used.')
 tf.app.flags.DEFINE_integer(
-    'batch_size', 32, 'The number of samples in each batch.')
+    'batch_size', 16, 'The number of samples in each batch.')
 tf.app.flags.DEFINE_integer(
     'train_image_size', None, 'Train image size')
 tf.app.flags.DEFINE_integer('max_number_of_steps', 200000,
