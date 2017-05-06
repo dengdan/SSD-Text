@@ -59,8 +59,8 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'save_interval_secs', 600,
     'The frequency with which the model is saved, in seconds.')
-tf.app.flags.DEFINE_float(
-    'gpu_memory_fraction', 0.8, 'GPU memory fraction to use.')
+#tf.app.flags.DEFINE_float(
+#    'gpu_memory_fraction', 0.8, 'GPU memory fraction to use.')
 
 # =========================================================================== #
 # Optimization Flags.
@@ -362,13 +362,18 @@ def main(_):
         # =================================================================== #
         # Kicks off the training.
         # =================================================================== #
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
-        config = tf.ConfigProto(log_device_placement=False,
-                                gpu_options=gpu_options)
+        #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
+        #config = tf.ConfigProto(log_device_placement=False,
+         #                       gpu_options=gpu_options)
         saver = tf.train.Saver(max_to_keep=500,
                                keep_checkpoint_every_n_hours=1.0,
                                write_version=2,
                                pad_step_number=False)
+                               
+        train_step_kwargs = {
+          'should_trace':tf.constant(1), 
+          'logdir':FLAGS.train_dir
+        }
         slim.learning.train(
             train_tensor,
             logdir=FLAGS.train_dir,
@@ -380,6 +385,8 @@ def main(_):
             log_every_n_steps=FLAGS.log_every_n_steps,
             save_summaries_secs=FLAGS.save_summaries_secs,
             saver=saver,
+            #trace_every_n_steps = 10,
+            #train_step_kwargs = train_step_kwargs,
             save_interval_secs=FLAGS.save_interval_secs,
 #            session_config=config,
             sync_optimizer=None)

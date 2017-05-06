@@ -35,8 +35,6 @@ slim = tf.contrib.slim
 # Some default EVAL parameters
 # =========================================================================== #
 # List of recalls values at which precision is evaluated.
-LIST_RECALLS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85,
-                0.90, 0.95, 0.96, 0.97, 0.98, 0.99]
 DATA_FORMAT = 'NHWC'
 
 # =========================================================================== #
@@ -62,8 +60,6 @@ tf.app.flags.DEFINE_boolean(
 # =========================================================================== #
 # Main evaluation flags.
 # =========================================================================== #
-size = 300
-postfix = '-new-ap'
 tf.app.flags.DEFINE_integer(
     'num_classes', 2, 'Number of classes to use in the dataset.')
 tf.app.flags.DEFINE_integer(
@@ -75,11 +71,11 @@ tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
 
 tf.app.flags.DEFINE_string(
-    'checkpoint_path', util.io.get_absolute_path('~/temp_nfs/text-detection-with-wbr-%d%s/'%(size, postfix)),
+    'checkpoint_path', None,
     'The directory where the model was written to or an absolute path to a '
     'checkpoint file.')
 tf.app.flags.DEFINE_string(
-    'eval_dir', util.io.get_absolute_path('~/temp_nfs/text-detection-with-wbr-%d%s/eval'%(size, postfix)), 'Directory where the results are saved to.')
+    'eval_dir', None, 'Directory where the results are saved to.')
 tf.app.flags.DEFINE_integer(
     'num_preprocessing_threads', 4,
     'The number of threads used to create the batches.')
@@ -88,9 +84,9 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'test', 'The name of the train/test split.')
 tf.app.flags.DEFINE_string(
-    'dataset_dir', util.io.get_absolute_path('~/dataset_nfs/SSD-tf/ICDAR'), 'The directory where the dataset files are stored.')
+    'dataset_dir', None, 'The directory where the dataset files are stored.')
 tf.app.flags.DEFINE_string(
-    'model_name', 'ssd_%d_vgg'%(size), 'The name of the architecture to evaluate.')
+    'model_name', None, 'The name of the architecture to evaluate.')
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
     'as `None`, then the model_name flag is used.')
