@@ -42,7 +42,7 @@
  'rmsprop_momentum': 0.9,
  'save_interval_secs': 600,
  'save_summaries_secs': 600,
- 'train_dir': '/home/dengdan/temp/ssd-text-512/origin-config',
+ 'train_dir': '/home/dengdan/temp/ssd-text-/origin-config',
  'train_image_size': None,
  'trainable_scopes': None,
  'weight_decay': 4e-05}

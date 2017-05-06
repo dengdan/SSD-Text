@@ -1,6 +1,6 @@
 set -x
 set -e
-CUDA_VISIBLE_DEVICES=$1
+export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 HOME=/home/dengdan
 TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/origin-config
