@@ -86,13 +86,13 @@ def cvt_to_tfrecords(output_path , data_path, gt_path):
             tfrecord_writer.write(example.SerializeToString())
         
 if __name__ == "__main__":
-    root_dir = util.io.get_absolute_path('~/dataset_nfs/ICDAR2015/Challenge2.Task123/')
+    root_dir = util.io.get_absolute_path('~/dataset/ICDAR2015/Challenge2.Task123/')
     training_data_dir = util.io.join_path(root_dir, 'Challenge2_Training_Task12_Images')
     training_gt_dir = util.io.join_path(root_dir,'Challenge2_Training_Task1_GT')
     test_data_dir = util.io.join_path(root_dir,'Challenge2_Test_Task12_Images')
     test_gt_dir = util.io.join_path(root_dir,'Challenge2_Test_Task1_GT')
     
-    output_dir = util.io.get_absolute_path('~/dataset_nfs/SSD-tf/ICDAR/')
+    output_dir = util.io.get_absolute_path('~/dataset/SSD-tf/ICDAR/')
     util.io.mkdir(output_dir);
-#    cvt_to_tfrecords(output_path = util.io.join_path(output_dir, 'icdar2013_train.tfrecords'), data_path = training_data_dir, gt_path = training_gt_dir)
-    cvt_to_tfrecords(output_path = util.io.join_path(output_dir,  'icdar2013_test.tfrecords'), data_path = test_data_dir, gt_path = test_gt_dir)
+    cvt_to_tfrecords(output_path = util.io.join_path(output_dir, 'icdar2013_train.tfrecords'), data_path = training_data_dir, gt_path = training_gt_dir)
+#    cvt_to_tfrecords(output_path = util.io.join_path(output_dir,  'icdar2013_test.tfrecords'), data_path = test_data_dir, gt_path = test_gt_dir)
