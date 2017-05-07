@@ -186,6 +186,8 @@ def create_clones(config, model_fn, args=None, kwargs=None):
     kwargs = kwargs or {}
     with slim.arg_scope([slim.model_variable, slim.variable],
                         device=config.variables_device()):
+        import pdb
+        pdb.set_trace()
         # Create clones.
         for i in range(0, config.num_clones):
             with tf.name_scope(config.clone_scope(i)) as clone_scope:
@@ -490,7 +492,7 @@ class DeploymentConfig(object):
                  replica_id=0,
                  num_replicas=1,
                  num_ps_tasks=0,
-                 worker_job_name='worker',
+                 worker_job_name='localhost',
                  ps_job_name='ps'):
         """Create a DeploymentConfig.
 

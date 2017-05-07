@@ -189,9 +189,9 @@ def main(_):
         deploy_config = model_deploy.DeploymentConfig(
             num_clones=FLAGS.num_clones,
             clone_on_cpu=FLAGS.clone_on_cpu,
-            replica_id=0,
-            num_replicas=1,
-            num_ps_tasks=0)
+            replica_id=0,#no use if on a single machine
+            num_replicas=2,
+            num_ps_tasks=2)
         # Create global_step.
         with tf.device(deploy_config.variables_device()):
             global_step = slim.create_global_step()
@@ -216,6 +216,8 @@ def main(_):
         # =================================================================== #
         # Create a dataset provider and batches.
         # =================================================================== #
+        
+        batch_size = FLAGS.batch_size / 
         with tf.device(deploy_config.inputs_device()):
             with tf.name_scope(FLAGS.dataset_name + '_data_provider'):
                 provider = slim.dataset_data_provider.DatasetDataProvider(
@@ -240,11 +242,10 @@ def main(_):
             gclasses, glocalisations, gscores = \
                 ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
             batch_shape = [1] + [len(ssd_anchors)] * 3
-
             # Training batches and queue.
             r = tf.train.batch(
                 tf_utils.reshape_list([image, gclasses, glocalisations, gscores]),
-                batch_size=FLAGS.batch_size,
+                batch_size=FLAGSbatch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
             b_image, b_gclasses, b_glocalisations, b_gscores = \
@@ -363,7 +364,7 @@ def main(_):
         # Kicks off the training.
         # =================================================================== #
         #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
-        #config = tf.ConfigProto(log_device_placement=False,
+        config = tf.ConfigProto(log_device_placement=False,allow_soft_placement=True)
          #                       gpu_options=gpu_options)
         saver = tf.train.Saver(max_to_keep=500,
                                keep_checkpoint_every_n_hours=1.0,
@@ -385,10 +386,10 @@ def main(_):
             log_every_n_steps=FLAGS.log_every_n_steps,
             save_summaries_secs=FLAGS.save_summaries_secs,
             saver=saver,
-            #trace_every_n_steps = 10,
-            #train_step_kwargs = train_step_kwargs,
+#            trace_every_n_steps = 10,
+#            train_step_kwargs = train_step_kwargs,
             save_interval_secs=FLAGS.save_interval_secs,
-#            session_config=config,
+            session_config=config,
             sync_optimizer=None)
 
 
