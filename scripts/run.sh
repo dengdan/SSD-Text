@@ -21,7 +21,8 @@ case $ACTION in
             --dataset_name=icdar2013 \
             --dataset_split_name=train \
             --model_name=$MODEL_NAME \
-            --batch_size=9 \
+            --batch_size=3 \
+            --gpu_memory_fraction=.5 \
             --max_number_of_steps=400000
     ;;
     

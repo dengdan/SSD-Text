@@ -186,8 +186,6 @@ def create_clones(config, model_fn, args=None, kwargs=None):
     kwargs = kwargs or {}
     with slim.arg_scope([slim.model_variable, slim.variable],
                         device=config.variables_device()):
-        import pdb
-        pdb.set_trace()
         # Create clones.
         for i in range(0, config.num_clones):
             with tf.name_scope(config.clone_scope(i)) as clone_scope:
