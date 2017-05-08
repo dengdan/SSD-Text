@@ -1,3 +1,3 @@
 git add . --all
 git commit -m "modify code for multi-gpu training"
-git push -u  origin multi-gpu
+git push  origin multi-gpu
