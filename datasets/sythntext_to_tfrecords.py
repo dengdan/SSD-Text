@@ -198,7 +198,6 @@ def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
                     ymin *= h
                     ymax *= h
                     util.img.rectangle(image, (int(xmin), int(ymin)), (int(xmax), int(ymax)), color = util.img.COLOR_WHITE)
-                """
                 for wi, xys in enumerate(full_bboxes):
                     xys[0, :] = xys[0, :] * w
                     xys[1, :] = xys[1, :] * h
@@ -207,6 +206,7 @@ def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
                     util.img.draw_contours(image, cnts, -1, color = util.img.COLOR_WHITE)
                     util.img.put_text(image, txts[wi],(xys[0, 1], xys[1,1]), color = util.img.COLOR_WHITE)
                 util.img.imshow("%d"%(image_idx), image)
+                """
                 labels = len(rect_bboxes) * [1];
                 difficult = len(rect_bboxes) * [0];
                 truncated = len(rect_bboxes) * [0];
@@ -222,6 +222,6 @@ def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
 if __name__ == "__main__":
     mat_path = util.io.get_absolute_path('~/dataset/SynthText/gt.mat')
     root_path = util.io.get_absolute_path('~/dataset/SynthText/')
-    output_dir = util.io.get_absolute_path('~/dataset/SSD-tf/SythnText2/')
+    output_dir = util.io.get_absolute_path('~/dataset/SSD-tf/SythnText/')
     util.io.mkdir(output_dir);
     cvt_to_tfrecords(output_path = util.io.join_path(output_dir,  'SynthText_%d.tfrecord'), data_path = root_path, gt_path = mat_path)
