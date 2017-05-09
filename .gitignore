@@ -89,3 +89,5 @@ ENV/
 .ropeproject
 
 street/data
+*.swap
+*.pyc
