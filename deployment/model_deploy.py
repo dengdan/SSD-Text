@@ -490,7 +490,7 @@ class DeploymentConfig(object):
                  replica_id=0,
                  num_replicas=1,
                  num_ps_tasks=0,
-                 worker_job_name='worker',
+                 worker_job_name='localhost',
                  ps_job_name='ps'):
         """Create a DeploymentConfig.
 

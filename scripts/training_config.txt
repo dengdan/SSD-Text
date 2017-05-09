@@ -2,29 +2,55 @@
 # =========================================================================== #
 # Training | Evaluation flags:
 # =========================================================================== #
-{'batch_size': 1,
- 'checkpoint_path': '/home/dengdan/temp/ssd-text-512/origin-config',
+{'adadelta_rho': 0.95,
+ 'adagrad_initial_accumulator_value': 0.1,
+ 'adam_beta1': 0.9,
+ 'adam_beta2': 0.999,
+ 'batch_size': 9,
+ 'checkpoint_exclude_scopes': None,
+ 'checkpoint_model_scope': None,
+ 'checkpoint_path': None,
+ 'clone_on_cpu': False,
  'dataset_dir': '/home/dengdan/dataset/SSD-tf/ICDAR',
  'dataset_name': 'icdar2013',
- 'dataset_split_name': 'test',
- 'eval_dir': '/home/dengdan/temp/ssd-text-512/origin-config/eval',
- 'eval_image_size': None,
- 'eval_resize': 4,
- 'gpu_memory_fraction': 0.1,
- 'keep_top_k': 200,
- 'master': '',
- 'matching_threshold': 0.5,
- 'max_num_batches': None,
+ 'dataset_split_name': 'train',
+ 'end_learning_rate': 0.0001,
+ 'ftrl_initial_accumulator_value': 0.1,
+ 'ftrl_l1': 0.0,
+ 'ftrl_l2': 0.0,
+ 'ftrl_learning_rate_power': -0.5,
+ 'gpu_memory_fraction': 0.5,
+ 'ignore_missing_vars': False,
+ 'label_smoothing': 0.0,
+ 'labels_offset': 0,
+ 'learning_rate': 0.0001,
+ 'learning_rate_decay_factor': 0.94,
+ 'learning_rate_decay_type': 'fixed',
+ 'log_every_n_steps': 10,
+ 'loss_alpha': 1.0,
+ 'match_threshold': 0.5,
+ 'max_number_of_steps': 400000,
  'model_name': 'ssd_512_vgg',
+ 'momentum': 0.9,
  'moving_average_decay': None,
- 'nms_threshold': 0.45,
+ 'negative_ratio': 3.0,
  'num_classes': 2,
+ 'num_clones': 1,
+ 'num_epochs_per_decay': 2.0,
  'num_preprocessing_threads': 4,
+ 'num_readers': 4,
+ 'opt_epsilon': 1.0,
+ 'optimizer': 'rmsprop',
  'preprocessing_name': None,
- 'remove_difficult': True,
- 'select_threshold': 0.01,
- 'select_top_k': 400,
- 'wait_for_checkpoints': True}
+ 'rmsprop_decay': 0.9,
+ 'rmsprop_momentum': 0.9,
+ 'save_interval_secs': 600,
+ 'save_summaries_secs': 600,
+ 'should_trace': False,
+ 'train_dir': '/home/dengdan/temp/ssd-text-512/origin-config',
+ 'train_image_size': None,
+ 'trainable_scopes': None,
+ 'weight_decay': 4e-05}
 
 # =========================================================================== #
 # SSD net parameters:
@@ -63,5 +89,5 @@
 # =========================================================================== #
 # Training | Evaluation dataset files:
 # =========================================================================== #
-['/home/dengdan/dataset/SSD-tf/ICDAR/icdar2013_test.tfrecords']
+['/home/dengdan/dataset/SSD-tf/ICDAR/icdar2013_train.tfrecords']
 

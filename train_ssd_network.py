@@ -60,8 +60,8 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'save_interval_secs', 600,
     'The frequency with which the model is saved, in seconds.')
-#tf.app.flags.DEFINE_float(
-#    'gpu_memory_fraction', 0.8, 'GPU memory fraction to use.')
+tf.app.flags.DEFINE_float(
+    'gpu_memory_fraction', -1, 'GPU memory fraction to use. If -1, allow_growth is used.')
 
 # =========================================================================== #
 # Optimization Flags.
@@ -173,6 +173,12 @@ tf.app.flags.DEFINE_boolean(
     'ignore_missing_vars', False,
     'When restoring a checkpoint would ignore missing variables.')
 
+
+# Debug flags
+tf.app.flags.DEFINE_boolean(
+    'should_trace', False,
+    'RunOption.TRACE_LEVEL is TRACE_ALL, for debug only.')
+
 FLAGS = tf.app.flags.FLAGS
 
 
@@ -184,15 +190,24 @@ def main(_):
         raise ValueError('You must supply the dataset directory with --dataset_dir')
 
     tf.logging.set_verbosity(tf.logging.DEBUG)
+    
+    # use all available gpus
+    gpus = util.tf.get_available_gpus();
+    num_clones = len(gpus);
+    if FLAGS.batch_size % num_clones != 0:
+        raise ValueError('If multi gpus are used, the batch_size should be a multiple of the number of gpus.')
+    batch_size = FLAGS.batch_size / num_clones;
+    print "%d images per GPU"%(batch_size)
+    
     with tf.Graph().as_default():
         # Config model_deploy. Keep TF Slim Models structure.
         # Useful if want to need multiple GPUs and/or servers in the future.
         deploy_config = model_deploy.DeploymentConfig(
-            num_clones=FLAGS.num_clones,
-            clone_on_cpu=FLAGS.clone_on_cpu,
-            replica_id=0,
-            num_replicas=1,
-            num_ps_tasks=0)
+            num_clones = num_clones,
+            clone_on_cpu = FLAGS.clone_on_cpu,
+            replica_id=0,#no use if on a single machine
+            num_replicas = 1,#no use if on a single machine
+            num_ps_tasks= 0)#no use if on a single machine
         # Create global_step.
         with tf.device(deploy_config.variables_device()):
             global_step = slim.create_global_step()
@@ -217,6 +232,8 @@ def main(_):
         # =================================================================== #
         # Create a dataset provider and batches.
         # =================================================================== #
+        
+        
         with tf.device(deploy_config.inputs_device()):
             with tf.name_scope(FLAGS.dataset_name + '_data_provider'):
                 provider = slim.dataset_data_provider.DatasetDataProvider(
@@ -241,11 +258,10 @@ def main(_):
             gclasses, glocalisations, gscores = \
                 ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
             batch_shape = [1] + [len(ssd_anchors)] * 3
-
             # Training batches and queue.
             r = tf.train.batch(
                 tf_utils.reshape_list([image, gclasses, glocalisations, gscores]),
-                batch_size=FLAGS.batch_size,
+                batch_size = batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
             b_image, b_gclasses, b_glocalisations, b_gscores = \
@@ -320,7 +336,7 @@ def main(_):
                 FLAGS.moving_average_decay, global_step)
         else:
             moving_average_variables, variable_averages = None, None
-
+        
         # =================================================================== #
         # Configure the optimization procedure.
         # =================================================================== #
@@ -363,18 +379,30 @@ def main(_):
         # =================================================================== #
         # Kicks off the training.
         # =================================================================== #
-        #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
-        #config = tf.ConfigProto(log_device_placement=False,
-         #                       gpu_options=gpu_options)
+        config = tf.ConfigProto(log_device_placement = False, allow_soft_placement = True)
+        if FLAGS.gpu_memory_fraction < 0:
+            config.gpu_options.allow_growth = True
+        elif FLAGS.gpu_memory_fraction > 0:
+            config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_memory_fraction;
+        print config
+        
         saver = tf.train.Saver(max_to_keep=500,
                                keep_checkpoint_every_n_hours=1.0,
                                write_version=2,
                                pad_step_number=False)
-                               
-        train_step_kwargs = {
-          'should_trace':tf.constant(1), 
-          'logdir':FLAGS.train_dir
-        }
+        
+        debug_kargs = {}
+        if FLAGS.should_trace:                    
+            train_step_kwargs = {
+              'should_trace':tf.constant(1), 
+              'logdir':FLAGS.train_dir
+            }
+            trace_every_n_steps = 10,
+            debug_kargs = {
+                "train_step_kwargs":train_step_kwargs,
+                "trace_every_n_steps":trace_every_n_steps
+            }
+
         slim.learning.train(
             train_tensor,
             logdir=FLAGS.train_dir,
@@ -386,11 +414,11 @@ def main(_):
             log_every_n_steps=FLAGS.log_every_n_steps,
             save_summaries_secs=FLAGS.save_summaries_secs,
             saver=saver,
-            #trace_every_n_steps = 10,
-            #train_step_kwargs = train_step_kwargs,
             save_interval_secs=FLAGS.save_interval_secs,
-#            session_config=config,
-            sync_optimizer=None)
+            session_config=config,
+            sync_optimizer=None,
+            **debug_kargs
+            )
 
 
 if __name__ == '__main__':
