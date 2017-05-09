@@ -1,3 +1,3 @@
 git add . --all
-git commit -m "modify code for multi-gpu training"
-git push  origin multi-gpu
+git commit -m "merge with weighted-loss"
+git push  origin master
