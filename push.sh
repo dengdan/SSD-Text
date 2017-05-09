@@ -1,3 +1,3 @@
 git add . --all
-git commit -m "SynthText to tfrecord"
+git commit -m "add data adapter for SynthText"
 git push  origin master
