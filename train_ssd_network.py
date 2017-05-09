@@ -39,8 +39,8 @@ tf.app.flags.DEFINE_float(
 # =========================================================================== #
 # General Flags.
 # =========================================================================== #
-size = 512
 tf.app.flags.DEFINE_string('train_dir', util.io.get_absolute_path('~/temp_nfs/text-detection-with-wbr-%d-new-ap/'%(size)),'Directory where checkpoints and event logs are written to.')
+
 tf.app.flags.DEFINE_integer('num_clones', 1,'Number of model clones to deploy.')
 tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
                             'Use CPUs to deploy clones.')
@@ -134,7 +134,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'train', 'The name of the train/test split.')
 tf.app.flags.DEFINE_string(
-    'dataset_dir', util.io.get_absolute_path('~/dataset_nfs/SSD-tf/ICDAR'), 'The directory where the dataset files are stored.')
+    'dataset_dir', util.io.get_absolute_path('~/dataset/SSD-tf/ICDAR'), 'The directory where the dataset files are stored.')
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
     'An offset for the labels in the dataset. This flag is primarily used to '
