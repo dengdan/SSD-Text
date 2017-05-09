@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+from __future__ import print_function
 """Diverse TensorFlow utils, for training, evaluation and so on!
 """
 import os
+
 from pprint import pprint
 
 import tensorflow as tf
@@ -62,29 +64,29 @@ def print_configuration(flags, ssd_params, data_sources, save_dir=None):
     """Print the training configuration.
     """
     def print_config(stream=None):
-#        print('\n# =========================================================================== #', file=stream)
-#        print('# Training | Evaluation flags:', file=stream)
-#        print('# =========================================================================== #', file=stream)
+        print('\n# =========================================================================== #', file=stream)
+        print('# Training | Evaluation flags:', file=stream)
+        print('# =========================================================================== #', file=stream)
         pprint(flags, stream=stream)
 
-#        print('\n# =========================================================================== #', file=stream)
-#        print('# SSD net parameters:', file=stream)
-#        print('# =========================================================================== #', file=stream)
+        print('\n# =========================================================================== #', file=stream)
+        print('# SSD net parameters:', file=stream)
+        print('# =========================================================================== #', file=stream)
         pprint(dict(ssd_params._asdict()), stream=stream)
 
-#        print('\n# =========================================================================== #', file=stream)
-#        print('# Training | Evaluation dataset files:', file=stream)
-#        print('# =========================================================================== #', file=stream)
+        print('\n# =========================================================================== #', file=stream)
+        print('# Training | Evaluation dataset files:', file=stream)
+        print('# =========================================================================== #', file=stream)
         data_files = parallel_reader.get_data_files(data_sources)
         pprint(sorted(data_files), stream=stream)
-#        print('', file=stream)
+        print('', file=stream)
 
     print_config(None)
     # Save to a text file as well.
     if save_dir is not None:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        path = os.path.join(save_dir, 'training_config.txt')
+        path = os.path.join('./scripts/training_config.txt')
         with open(path, "w") as out:
             print_config(out)
 

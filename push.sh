@@ -1,3 +1,3 @@
 git add . --all
-git commit -m "add test code"
-git push -u origin master
+git commit -m "add scripts for experiment ssd-512-origin"
+git push origin ssd-512-origin

@@ -658,6 +658,7 @@ class DeploymentConfig(object):
         Returns:
             A value suitable for `tf.device()`.
         """
+
         device = ''
         if self._num_ps_tasks > 0:
             device += self._ps_device
