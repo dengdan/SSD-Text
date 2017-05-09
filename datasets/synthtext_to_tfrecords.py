@@ -173,7 +173,7 @@ def _convert_to_example(image_data, labels, labels_text, rect_bboxes, full_bboxe
     return example
 
 
-def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
+def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 50000):
 
     fetcher = SynthTextDataFetcher(root_path = data_path, mat_path = gt_path)
     fid = 0

@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Provides data for the Pascal VOC Dataset (images + annotations).
-"""
 import tensorflow as tf
 import os
 slim = tf.contrib.slim
 
-FILE_PATTERN = 'icdar2013_%s.tfrecords'
+FILE_PATTERN = 'SynthText_*.tfrecord'
 ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying height and width.',
     'shape': 'Shape of the image',
@@ -27,14 +25,13 @@ ITEMS_TO_DESCRIPTIONS = {
 }
 NUM_CLASSES = 2
 split_to_sizes = {
-    'train': 229,
-    'test': 233
+    'train': 858750
 }
 
 def get_split(split_name, dataset_dir, file_pattern=FILE_PATTERN, reader=None):
     if file_pattern is None:
         file_pattern=FILE_PATTERN
-    file_pattern = os.path.join(dataset_dir, file_pattern % split_name)
+    file_pattern = os.path.join(dataset_dir, file_pattern)
     # Allowing None in the signature so that dataset_factory can use the default.
     if reader is None:
         reader = tf.TFRecordReader

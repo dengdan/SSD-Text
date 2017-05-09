@@ -229,8 +229,8 @@ def main(_):
         with tf.Session() as sess:
           if ckpt and ckpt.model_checkpoint_path:
             step = saver.restore(sess, ckpt.model_checkpoint_path)
-            import datasets.data
-            data_provider = datasets.data.ICDAR2013Data()
+            import datasets.icdar2013_data
+            data_provider = datasets.icdar2013_data.ICDAR2013Data()
             for i in xrange(data_provider.num_images):
               print 'image %d/%d'%(i + 1, data_provider.num_images)
               image_data, bbox_data, label_data, name = data_provider.get_data();

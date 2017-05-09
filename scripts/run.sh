@@ -4,10 +4,10 @@ export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 HOME=/home/dengdan
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/origin-config
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain/origin-config
 CKPT_PATH=$TRAIN_DIR
 MODEL_NAME=ssd_${SIZE}_vgg
-DATASET=$HOME/dataset/SSD-tf/ICDAR
+DATASET=$HOME/dataset/SSD-tf/SynthText #ICDAR
 EVAL_DIR=${TRAIN_DIR}/eval
 case $ACTION in 
     train)
@@ -18,7 +18,7 @@ case $ACTION in
             --train_dir=$TRAIN_DIR \
             --learning_rate_decay_type=fixed \
             --learning_rate=0.0001 \
-            --dataset_name=icdar2013 \
+            --dataset_name=synthtext \ #icdar2013 \
             --dataset_split_name=train \
             --model_name=$MODEL_NAME \
             --batch_size=9 \
@@ -34,7 +34,6 @@ case $ACTION in
             --eval_dir=$EVAL_DIR\
             --model_name=$MODEL_NAME
     ;;
-    
     test)
     
     ;;

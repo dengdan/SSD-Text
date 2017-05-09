@@ -23,13 +23,14 @@ from datasets import imagenet
 from datasets import icdar2013
 from datasets import pascalvoc_2007
 from datasets import pascalvoc_2012
-
+from datasets import synthtext
 datasets_map = {
     'cifar10': cifar10,
     'imagenet': imagenet,
     'pascalvoc_2007': pascalvoc_2007,
     'pascalvoc_2012': pascalvoc_2012,
-    'icdar2013':icdar2013
+    'icdar2013':icdar2013,
+    'synthtext':synthtext
 }
 
 

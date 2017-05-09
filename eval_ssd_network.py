@@ -132,8 +132,8 @@ def main(_):
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
             preprocessing_name, is_training=False)
 
-        tf_utils.print_configuration(FLAGS.__flags, ssd_params,
-                                     dataset.data_sources, FLAGS.eval_dir)
+        #tf_utils.print_configuration(FLAGS.__flags, ssd_params,
+        #                             dataset.data_sources, FLAGS.eval_dir)
         # =================================================================== #
         # Create a dataset provider and batches.
         # =================================================================== #
