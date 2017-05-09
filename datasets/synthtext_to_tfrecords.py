@@ -11,7 +11,7 @@ import time
 import util  
 
 
-class SythnTextDataFetcher():
+class SynthTextDataFetcher():
     def __init__(self, mat_path, root_path):
         self.mat_path = mat_path
         self.root_path = root_path
@@ -106,7 +106,7 @@ class SythnTextDataFetcher():
         if len(rect_bboxes) == 0:
             return None;
         
-        return img, txts, rect_bboxes, full_bboxes
+        return image_path, img, txts, rect_bboxes, full_bboxes
     
         
 def _convert_to_example(image_data, labels, labels_text, rect_bboxes, full_bboxes, shape, difficult, truncated):
@@ -175,22 +175,24 @@ def _convert_to_example(image_data, labels, labels_text, rect_bboxes, full_bboxe
 
 def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
 
-    fetcher = SythnTextDataFetcher(root_path = data_path, mat_path = gt_path)
+    fetcher = SynthTextDataFetcher(root_path = data_path, mat_path = gt_path)
     fid = 0
-    image_idx = 0
+    image_idx = -1
     while image_idx < fetcher.num_images:
         with tf.python_io.TFRecordWriter(output_path%(fid)) as tfrecord_writer:
             record_count = 0;
             while record_count != records_per_file:
+                image_idx += 1;
+                if image_idx >= fetcher.num_images:
+                    break;
                 print "loading image %d/%d"%(image_idx + 1, fetcher.num_images)
                 record = fetcher.fetch_record(image_idx);
-                image_idx += 1;
                 if record is None:
                     print '\nimage %d does not exist'%(image_idx + 1)
                     continue;
-                image, txts, rect_bboxes, full_bboxes = record;
-                h, w = image.shape[0:-1]
+                image_path, image, txts, rect_bboxes, full_bboxes = record;
                 """
+                h, w = image.shape[0:-1]
                 for bbox in rect_bboxes:
                     xmin, ymin, xmax, ymax = bbox;
                     xmin *= w
@@ -210,7 +212,6 @@ def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
                 labels = len(rect_bboxes) * [1];
                 difficult = len(rect_bboxes) * [0];
                 truncated = len(rect_bboxes) * [0];
-                image_path = fetcher.get_image_path(image_idx)
                 image_data = tf.gfile.FastGFile(image_path, 'r').read()
                 shape = image.shape
                 example = _convert_to_example(image_data, labels, txts, rect_bboxes, full_bboxes, shape, difficult, truncated)
@@ -222,6 +223,6 @@ def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
 if __name__ == "__main__":
     mat_path = util.io.get_absolute_path('~/dataset/SynthText/gt.mat')
     root_path = util.io.get_absolute_path('~/dataset/SynthText/')
-    output_dir = util.io.get_absolute_path('~/dataset/SSD-tf/SythnText/')
+    output_dir = util.io.get_absolute_path('~/dataset/SSD-tf/SynthText/')
     util.io.mkdir(output_dir);
     cvt_to_tfrecords(output_path = util.io.join_path(output_dir,  'SynthText_%d.tfrecord'), data_path = root_path, gt_path = mat_path)
