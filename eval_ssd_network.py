@@ -60,6 +60,7 @@ tf.app.flags.DEFINE_boolean(
 # =========================================================================== #
 # Main evaluation flags.
 # =========================================================================== #
+
 tf.app.flags.DEFINE_integer(
     'num_classes', 2, 'Number of classes to use in the dataset.')
 tf.app.flags.DEFINE_integer(
