@@ -87,7 +87,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
+.swap
 street/data
 *.swap
 *.pyc
