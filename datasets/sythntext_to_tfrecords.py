@@ -22,6 +22,7 @@ class SythnTextDataFetcher():
         data = util.io.load_mat(self.mat_path)
         self.image_paths = data['imnames'][0]
         self.image_bbox = data['wordBB'][0]
+        self.txts = data['txt'][0]
         self.num_images =  len(self.image_paths)
 
     def get_image_path(self, idx):
@@ -76,8 +77,11 @@ class SythnTextDataFetcher():
         return is_valid, min_x / width, min_y /height, max_x / width, max_y / height, xys
         
     def get_txt(self, image_idx, word_idx):
-        #TODO
-        return '';
+        txts = self.txts[image_idx];
+        clean_txts = []
+        for txt in txts:
+            clean_txts += txt.split()
+        return str(clean_txts[word_idx])
         
         
     def fetch_record(self, image_idx):
@@ -122,6 +126,19 @@ def _convert_to_example(image_data, labels, labels_text, rect_bboxes, full_bboxe
     ymin = []
     xmax = []
     ymax = []
+    
+    x1 = []; x2 = []; x3 = []; x4 = []
+    y1 = []; y2 = []; y3 = []; y4 = []
+    
+    for xys in full_bboxes:
+        xs = list(xys[0, :])
+        ys = list(xys[1, :])
+        # pylint: disable=expression-not-assigned
+        [l.append(point) for l, point in zip([x1, x2, x3, x4], xs)]
+        [l.append(point) for l, point in zip([y1, y2, y3, y4], ys)]
+        # pylint: enable=expression-not-assigned
+    
+    
     for b in rect_bboxes:
         assert len(b) == 4
         # pylint: disable=expression-not-assigned
@@ -138,6 +155,14 @@ def _convert_to_example(image_data, labels, labels_text, rect_bboxes, full_bboxe
             'image/object/bbox/xmax': float_feature(xmax),
             'image/object/bbox/ymin': float_feature(ymin),
             'image/object/bbox/ymax': float_feature(ymax),
+            'image/object/bbox/x1': float_feature(x1),
+            'image/object/bbox/x2': float_feature(x2),
+            'image/object/bbox/x3': float_feature(x3),
+            'image/object/bbox/x4': float_feature(x4),
+            'image/object/bbox/y1': float_feature(y1),
+            'image/object/bbox/y2': float_feature(y2),
+            'image/object/bbox/y3': float_feature(y3),
+            'image/object/bbox/y4': float_feature(y4),
             'image/object/bbox/label': int64_feature(labels),
             'image/object/bbox/label_text': bytes_feature(labels_text),
             'image/format': bytes_feature(image_format),
@@ -148,15 +173,15 @@ def _convert_to_example(image_data, labels, labels_text, rect_bboxes, full_bboxe
     return example
 
 
-def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2):
+def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2000):
 
     fetcher = SythnTextDataFetcher(root_path = data_path, mat_path = gt_path)
     fid = 0
-    record_idx = 0;
     image_idx = 0
     while image_idx < fetcher.num_images:
         with tf.python_io.TFRecordWriter(output_path%(fid)) as tfrecord_writer:
-            while (record_idx + 1) % records_per_file:
+            record_count = 0;
+            while record_count != records_per_file:
                 print "loading image %d/%d"%(image_idx + 1, fetcher.num_images)
                 record = fetcher.fetch_record(image_idx);
                 image_idx += 1;
@@ -164,6 +189,24 @@ def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2):
                     print '\nimage %d does not exist'%(image_idx + 1)
                     continue;
                 image, txts, rect_bboxes, full_bboxes = record;
+                h, w = image.shape[0:-1]
+                """
+                for bbox in rect_bboxes:
+                    xmin, ymin, xmax, ymax = bbox;
+                    xmin *= w
+                    xmax *= w
+                    ymin *= h
+                    ymax *= h
+                    util.img.rectangle(image, (int(xmin), int(ymin)), (int(xmax), int(ymax)), color = util.img.COLOR_WHITE)
+                """
+                for wi, xys in enumerate(full_bboxes):
+                    xys[0, :] = xys[0, :] * w
+                    xys[1, :] = xys[1, :] * h
+                    xys = xys.transpose()
+                    cnts = util.img.points_to_contours(xys)
+                    util.img.draw_contours(image, cnts, -1, color = util.img.COLOR_WHITE)
+                    util.img.put_text(image, txts[wi],(xys[0, 1], xys[1,1]), color = util.img.COLOR_WHITE)
+                util.img.imshow("%d"%(image_idx), image)
                 labels = len(rect_bboxes) * [1];
                 difficult = len(rect_bboxes) * [0];
                 truncated = len(rect_bboxes) * [0];
@@ -172,12 +215,13 @@ def cvt_to_tfrecords(output_path , data_path, gt_path, records_per_file = 2):
                 shape = image.shape
                 example = _convert_to_example(image_data, labels, txts, rect_bboxes, full_bboxes, shape, difficult, truncated)
                 tfrecord_writer.write(example.SerializeToString())
-                record_idx += 1;
-            fid += 1;            
+                record_count += 1;
+                
+        fid += 1;            
                     
 if __name__ == "__main__":
-    mat_path = util.io.get_absolute_path('~/dataset/SynthText/wordbb.mat')
+    mat_path = util.io.get_absolute_path('~/dataset/SynthText/gt.mat')
     root_path = util.io.get_absolute_path('~/dataset/SynthText/')
-    output_dir = util.io.get_absolute_path('~/dataset/SSD-tf/SythnText/')
+    output_dir = util.io.get_absolute_path('~/dataset/SSD-tf/SythnText2/')
     util.io.mkdir(output_dir);
     cvt_to_tfrecords(output_path = util.io.join_path(output_dir,  'SynthText_%d.tfrecord'), data_path = root_path, gt_path = mat_path)
