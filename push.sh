@@ -1,3 +1,3 @@
 git add . --all
-git commit -m "SynthText to tfrecord"
-git push  origin master
+git commit -m "add DATASET for eval in run.sh"
+git push  origin

@@ -48,7 +48,7 @@ tf.app.flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 tf.app.flags.DEFINE_integer(
-    'num_preprocessing_threads', 4,
+    'num_preprocessing_threads', 8,
     'The number of threads used to create the batches.')
 
 tf.app.flags.DEFINE_integer(
@@ -380,10 +380,10 @@ def main(_):
         # Kicks off the training.
         # =================================================================== #
         config = tf.ConfigProto(log_device_placement = False, allow_soft_placement = True)
-        if FLAGS.gpu_memory_fraction < 0:
-            config.gpu_options.allow_growth = True
-        elif FLAGS.gpu_memory_fraction > 0:
-            config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_memory_fraction;
+#        if FLAGS.gpu_memory_fraction < 0:
+#            config.gpu_options.allow_growth = True
+#        elif FLAGS.gpu_memory_fraction > 0:
+#            config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_memory_fraction;
         print config
         
         saver = tf.train.Saver(max_to_keep=500,

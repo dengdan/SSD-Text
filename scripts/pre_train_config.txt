@@ -6,7 +6,7 @@
  'adagrad_initial_accumulator_value': 0.1,
  'adam_beta1': 0.9,
  'adam_beta2': 0.999,
- 'batch_size': 9,
+ 'batch_size': 27,
  'checkpoint_exclude_scopes': None,
  'checkpoint_model_scope': None,
  'checkpoint_path': None,
@@ -29,7 +29,7 @@
  'log_every_n_steps': 10,
  'loss_alpha': 1.0,
  'match_threshold': 0.5,
- 'max_number_of_steps': 400000,
+ 'max_number_of_steps': 50000,
  'model_name': 'ssd_512_vgg',
  'momentum': 0.9,
  'moving_average_decay': None,
@@ -37,7 +37,7 @@
  'num_classes': 2,
  'num_clones': 1,
  'num_epochs_per_decay': 2.0,
- 'num_preprocessing_threads': 4,
+ 'num_preprocessing_threads': 8,
  'num_readers': 4,
  'opt_epsilon': 1.0,
  'optimizer': 'rmsprop',
@@ -89,5 +89,22 @@
 # =========================================================================== #
 # Training | Evaluation dataset files:
 # =========================================================================== #
-['/home/dengdan/dataset/SSD-tf/SynthText/SynthText_0.tfrecord']
+['/home/dengdan/dataset/SSD-tf/SynthText/SynthText_0.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_1.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_10.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_11.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_12.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_13.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_14.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_15.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_16.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_17.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_2.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_3.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_4.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_5.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_6.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_7.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_8.tfrecord',
+ '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_9.tfrecord']
 
