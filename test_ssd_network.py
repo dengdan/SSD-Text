@@ -32,16 +32,7 @@ from preprocessing import preprocessing_factory
 
 slim = tf.contrib.slim
 
-# =========================================================================== #
-# Some default EVAL parameters
-# =========================================================================== #
-# List of recalls values at which precision is evaluated.
-LIST_RECALLS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85,
-                0.90, 0.95, 0.96, 0.97, 0.98, 0.99]
 DATA_FORMAT = 'NHWC'
-size = 512
-ckpt_path = '~/temp_nfs/text-detection-with-wbr-512-new-ap'
-dump_path = '~/temp_nfs/no-use/ssd-text-%d/'%(size)
 # =========================================================================== #
 # SSD evaluation Flags.
 # =========================================================================== #
@@ -51,6 +42,9 @@ tf.app.flags.DEFINE_integer(
     'select_top_k', 400, 'Select top-k detected bounding boxes.')
 tf.app.flags.DEFINE_integer(
     'keep_top_k', 200, 'Keep top-k detected objects.')
+tf.app.flags.DEFINE_float(
+    'keep_threshold', 0.0, 'Keep detected objects with confidence not less than it')
+    
 tf.app.flags.DEFINE_float(
     'nms_threshold', 0.45, 'Non-Maximum Selection threshold.')
 tf.app.flags.DEFINE_float(
@@ -75,11 +69,11 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
 tf.app.flags.DEFINE_string(
-    'checkpoint_path', util.io.get_absolute_path(ckpt_path),
+    'checkpoint_path', None,
     'The directory where the model was written to or an absolute path to a '
     'checkpoint file.')
 tf.app.flags.DEFINE_string(
-    'eval_dir', util.io.get_absolute_path('%s/eval/'%(ckpt_path)), 'Directory where the results are saved to.')
+    'eval_dir', None, 'Directory where the results are saved to.')
 tf.app.flags.DEFINE_integer(
     'num_preprocessing_threads', 4,
     'The number of threads used to create the batches.')
@@ -88,9 +82,9 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'test', 'The name of the train/test split.')
 tf.app.flags.DEFINE_string(
-    'dataset_dir', util.io.get_absolute_path('~/dataset_nfs/SSD-tf/ICDAR'), 'The directory where the dataset files are stored.')
+    'dataset_dir', util.io.get_absolute_path('~/dataset/ICDAR2015/Challenge2.Task123/'), 'The directory where the dataset files are stored.')
 tf.app.flags.DEFINE_string(
-    'model_name', 'ssd_%d_vgg'%(size), 'The name of the architecture to evaluate.')
+    'model_name', None, 'The name of the architecture to evaluate.')
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
     'as `None`, then the model_name flag is used.')
@@ -116,10 +110,8 @@ def main(_):
         tf_global_step = slim.get_or_create_global_step()
 
         # =================================================================== #
-        # Dataset + SSD model + Pre-processing
+        # SSD model + Pre-processing
         # =================================================================== #
-        dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
 
         # Get the SSD network and its anchors.
         ssd_class = nets_factory.get_network(FLAGS.model_name)
@@ -135,11 +127,7 @@ def main(_):
 #        image_preprocessing_fn = ssd_vgg_preprocessing.preprocess_for_test
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(preprocessing_name, is_training=False)
 
-        tf_utils.print_configuration(FLAGS.__flags, ssd_params,
-                                     dataset.data_sources, FLAGS.eval_dir)
-        # =================================================================== #
-        # Create a dataset provider and batches.
-        # =================================================================== #
+
         with tf.device('/cpu:0'):
             image = tf.placeholder("float32", name = 'images', shape = [None, None, 3])
             gbboxes = tf.placeholder("float32", name = 'bboxes', shape = [None, 4])
@@ -181,12 +169,16 @@ def main(_):
         # config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_path)
         saver = tf.train.Saver()
-        if FLAGS.max_num_batches:
-            num_batches = FLAGS.max_num_batches
-        else:
-            num_batches = math.ceil(dataset.num_samples / float(FLAGS.batch_size))
-        
-        def write_result(image_name, image_data, bboxes, scores, path = util.io.join_path(dump_path, util.io.get_filename(ckpt.model_checkpoint_path))):
+
+        def check(index, score, score_threshold = FLAGS.keep_threshold, num_threshold = FLAGS.keep_top_k):
+          if score < score_threshold:
+            return False
+          if index > num_threshold:
+            return False
+            
+          return True
+          
+        def write_result(image_name, image_data, bboxes, scores, path):
           filename = util.io.join_path(path, 'res_%s.txt'%(image_name))
           print filename
           h, w = image_data.shape[0:-1]
@@ -196,7 +188,7 @@ def main(_):
           bboxes[:, 3] = bboxes[:, 3] * w
           lines = []
           for b_idx, bscore in enumerate(scores):
-                if bscore < 0.1 or b_idx > 5:
+                if not check(b_idx, bscore):
                   break
                 bbox = bboxes[b_idx, :]
                 [ymin, xmin, ymax, xmax] = [int(v) for v in bbox]
@@ -208,6 +200,7 @@ def main(_):
                 lines.append(line)
           util.io.write_lines(filename, lines)
           
+        
         def draw_bbox(image_data, bboxes, scores, color):
           image_data = image_data.copy()
           h, w = image_data.shape[0:-1]
@@ -215,22 +208,34 @@ def main(_):
           bboxes[:, 1] = bboxes[:, 1] * w
           bboxes[:, 2] = bboxes[:, 2] * h
           bboxes[:, 3] = bboxes[:, 3] * w
+          
           for b_idx, bscore in enumerate(scores):
-               # if bscore < 0.5:
-               #   break
-                if b_idx > 5 :
+                if not check(b_idx, bscore):
                   break;
                 bbox = bboxes[b_idx, :]
                 [ymin, xmin, ymax, xmax] = [int(v) for v in bbox]
                 util.img.rectangle(image_data, (xmin, ymin), (xmax, ymax), color = color, border_width = 1)
                 util.img.put_text(image_data, '%.3f'%(bscore), (xmin, ymin));
           return image_data
+        
           
         with tf.Session() as sess:
           if ckpt and ckpt.model_checkpoint_path:
             step = saver.restore(sess, ckpt.model_checkpoint_path)
             import datasets.icdar2013_data
-            data_provider = datasets.icdar2013_data.ICDAR2013Data()
+            data_provider = datasets.icdar2013_data.ICDAR2013Data(root_dir = FLAGS.dataset_dir, split = FLAGS.dataset_split_name)
+            dump_path = FLAGS.eval_dir
+            ckpt_name = util.io.get_filename(str(ckpt.model_checkpoint_path));
+            xml_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name,  'xml')
+            txt_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'txt')
+            def create_zip():
+              zip_file = ckpt_name +"."+ FLAGS.dataset_split_name + '.zip'
+              cmd = 'cd %s;zip -j %s %s/*'%(dump_path, zip_file, txt_path);
+              print cmd
+              print util.cmd.cmd(cmd);
+              print "zip file created: ", util.io.join_path(dump_path, zip_file)
+              
+            image_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, "vis", "%s_%s.jpg")
             for i in xrange(data_provider.num_images):
               print 'image %d/%d'%(i + 1, data_provider.num_images)
               image_data, bbox_data, label_data, name = data_provider.get_data();
@@ -238,11 +243,16 @@ def main(_):
               sdict, bdict = sess.run([rscores, rbboxes], feed_dict = {image:image_data})
               bbox_score = sdict[1][0, :]
               bbox_pred = bdict[1][0, ...]
-              write_result(name, image_data, bbox_pred, bbox_score)
+              write_result(name, image_data, bbox_pred, bbox_score, path = txt_path)
               img_gt = draw_bbox(image_data, bbox_data, label_data, color = util.img.COLOR_GREEN)
               img_pred = draw_bbox(image_data, bbox_pred, bbox_score, util.img.COLOR_RGB_RED)
-              util.img.imwrite('~/temp_nfs/no-use/ssd-512/%s_test.jpg'%(name), img_pred, rgb = True)
-              util.img.imwrite('~/temp_nfs/no-use/ssd-512/%s_gt.jpg'%(name), img_gt, rgb = True)
-
+              util.img.imwrite(image_path%(name, 'pred'), img_pred, rgb = True)
+              util.img.imwrite(image_path%(name, 'gt'), img_gt, rgb = True)
+            
+            create_zip()
+            import datasets.deteval
+            datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path);
+            
+          
 if __name__ == '__main__':
     tf.app.run()

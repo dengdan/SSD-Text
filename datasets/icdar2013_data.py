@@ -4,31 +4,26 @@ mpl.use('Agg')
 import util;
 import numpy as np;
 class ICDAR2013Data(object):
-    def __init__(self, root_dir = '~/dataset_nfs/ICDAR2015/Challenge2.Task123/',
+    def __init__(self, root_dir = '~/dataset/ICDAR2015/Challenge2.Task123/',
         training_data_dir = 'Challenge2_Training_Task12_Images',
-        training_gt_dir = 'Challenge2_Training_Task1_GT'
-, training_data = False, test_data = True):
-        test_data_dir = 'Challenge2_Test_Task12_Images'
-        test_gt_dir = 'Challenge2_Test_Task1_GT'
+        training_gt_dir = 'Challenge2_Training_Task1_GT',
+        split = 'test',
+        test_data_dir = 'Challenge2_Test_Task12_Images',
+        test_gt_dir = 'Challenge2_Test_Task1_GT'):
         self.image_idx = -1;
-        images = []
-        bboxes = []
-        image_names = []
-        if training_data:
-            self.training_images, self.training_bboxes, self.training_image_names = self.get_images_and_gt(util.io.join_path(root_dir, training_data_dir), util.io.join_path(root_dir, training_gt_dir));
-            images += self.training_images
-            bboxes += self.training_bboxes
-            image_names += self.training_image_names
-                    
-        if test_data:
-            self.test_images, self.test_bboxes, self.test_image_names = self.get_images_and_gt(util.io.join_path(root_dir, test_data_dir), util.io.join_path(root_dir, test_gt_dir));
-            images += self.test_images
-            bboxes += self.test_bboxes
-            image_names += self.test_image_names;
+        if split == 'test':
+            self.gt_path = util.io.join_path(root_dir, test_gt_dir)
+            self.img_path = util.io.join_path(root_dir, test_data_dir)
+        else:
+            self.gt_path = util.io.join_path(root_dir, training_gt_dir)
+            self.img_path = util.io.join_path(root_dir, training_data_dir)
             
+            
+        images, bboxes, image_names = self.get_images_and_gt(gt_path = self.gt_path, data_path = self.img_path);
         self.num_images = len(images)
         self.data = [[img, bboxes, image_name] for(img, bboxes, image_name) in zip(images, bboxes, image_names)]
-
+    
+        
     def get_images_and_gt(self, data_path, gt_path):
         image_names = util.io.ls(data_path, '.jpg')#[0:10];
         print "%d images found in %s"%(len(image_names), data_path);
@@ -53,7 +48,6 @@ class ICDAR2013Data(object):
                 gt = util.str.split(gt, ' ');
                 box =[int(gt[i]) for i in range(4)];
                 x1, y1, x2, y2  = box;
-                print (x2 - x1) *1. / (y2 - y1)
                 box = [y1 / h, x1 / w, y2 / h,  x2 / w];
                 bbox_gt.append(box);
             bbox_gt = np.asarray(bbox_gt)

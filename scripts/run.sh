@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 HOME=/home/dengdan
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain/origin-config
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config
 CKPT_PATH=$TRAIN_DIR
 MODEL_NAME=ssd_${SIZE}_vgg
 EVAL_DIR=${TRAIN_DIR}/eval
@@ -24,7 +24,7 @@ case $ACTION in
             --batch_size=27 \
             --should_trace=0 \
             --gpu_memory_fraction=.5 \
-            --max_number_of_steps=50000
+            --max_number_of_steps=400000 #50000
     ;;
     train)
         DATASET=$HOME/dataset/SSD-tf/ICDAR
@@ -44,16 +44,28 @@ case $ACTION in
             --max_number_of_steps=400000
     ;;
     eval)
+        TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config
+        CKPT_PATH=$TRAIN_DIR
+        MODEL_NAME=ssd_${SIZE}_vgg
+        EVAL_DIR=${TRAIN_DIR}/eval
+        CUDA_VISIBLE_DEVICES=
         DATASET=$HOME/dataset/SSD-tf/ICDAR
         python eval_ssd_network.py \
             --dataset_dir=$DATASET \
             --checkpoint_path=$CKPT_PATH \
             --eval_dir=$EVAL_DIR\
+            --dataset_split_name=train \
             --model_name=$MODEL_NAME
     ;;
     test)
-    
+        EVAL_DIR=$HOME/temp_nfs/ssd_results/
+        python test_ssd_network.py \
+            --checkpoint_path=$CKPT_PATH \
+            --eval_dir=$EVAL_DIR\
+            --dataset_split_name=test \
+            --model_name=$MODEL_NAME \
+            --keep_top_k=20 \
+            --keep_threshold=0.05
     ;;
-    
 esac
 
