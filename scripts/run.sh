@@ -1,6 +1,6 @@
 set -x
 set -e
-CUDA_VISIBLE_DEVICES=$1
+export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 IMG_PER_GPU=$3
 
@@ -37,7 +37,7 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
             --should_trace=0 \
-            --gpu_memory_fraction=.5 \
+            --gpu_memory_fraction=0.5 \
             --max_number_of_steps=400000 #50000
     ;;
     train)
