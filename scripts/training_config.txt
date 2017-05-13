@@ -6,7 +6,7 @@
  'adagrad_initial_accumulator_value': 0.1,
  'adam_beta1': 0.9,
  'adam_beta2': 0.999,
- 'batch_size': 20,
+ 'batch_size': 24,
  'checkpoint_exclude_scopes': None,
  'checkpoint_model_scope': None,
  'checkpoint_path': None,
