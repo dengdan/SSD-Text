@@ -54,7 +54,7 @@ case $ACTION in
             --dataset_dir=$DATASET \
             --checkpoint_path=$CKPT_PATH \
             --eval_dir=$EVAL_DIR\
-            --dataset_split_name=train \
+            --dataset_split_name=test \
             --model_name=$MODEL_NAME
     ;;
     test)

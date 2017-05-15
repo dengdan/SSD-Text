@@ -10,6 +10,7 @@ class ICDAR2013Data(object):
         split = 'test',
         test_data_dir = 'Challenge2_Test_Task12_Images',
         test_gt_dir = 'Challenge2_Test_Task1_GT'):
+        self.split = split
         self.image_idx = -1;
         if split == 'test':
             self.gt_path = util.io.join_path(root_dir, test_gt_dir)
@@ -29,6 +30,7 @@ class ICDAR2013Data(object):
         print "%d images found in %s"%(len(image_names), data_path);
         images = [];
         bboxes = [];
+        aspect_ratios = []
         for idx, image_name in enumerate(image_names):
             path = util.io.join_path(data_path, image_name);
             print "\treading image: %d/%d"%(idx, len(image_names));
@@ -50,12 +52,15 @@ class ICDAR2013Data(object):
                 x1, y1, x2, y2  = box;
                 box = [y1 / h, x1 / w, y2 / h,  x2 / w];
                 bbox_gt.append(box);
+                aspect_ratios.append((x2 - x1)*1.0/(y2 - y1))
             bbox_gt = np.asarray(bbox_gt)
             bboxes.append(bbox_gt);
             image_names[idx] = image_name
 #            if idx >= 1:
 #                break;
-            
+        
+#        util.io.dump('~/temp/no-use/as_%s.pkl'%(self.split), aspect_ratios)
+        self.aspect_ratios = aspect_ratios;
         return images, bboxes, image_names;
         
     def vis_data(self):
@@ -76,14 +81,15 @@ class ICDAR2013Data(object):
         labels = np.reshape(labels, [-1, 1]);
         return image, bboxes, labels, name;
 
-if __name__ == "__main__":
+
+def vis_data():
     import numpy as np
     import tensorflow as tf
     import time
     import util
     util.mod.add_to_path('..')
     from preprocessing.preprocessing_factory  import get_preprocessing
-    data_provider = ICDAR2013Data(training_data = True, test_data = True);
+    data_provider = ICDAR2013Data();
     
     util.proc.set_proc_name('proc-test');
     
@@ -115,3 +121,19 @@ if __name__ == "__main__":
             util.plt.show_images(images = [I, I_box], save = True, show = False, path = '~/temp_nfs/no-use/%d.jpg'%(step))
 #            data.append([image_data, I_, L]);
 #            util.io.dump('test.pkl', data);
+
+def aspect_ratio_cal(split,k):
+    """
+    statistics of aspect ratios in icdar training and test data.
+    split: train or test
+    k: the N.o. centers of aspect ratios
+    """
+    data_provider = ICDAR2013Data(split=split);
+    aspect_ratios = data_provider.aspect_ratios
+    labels, clusters, centers = util.ml.kmeans(aspect_ratios, k);
+    for i in xrange(len(centers)):
+        print 'Aspect ratio: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
+        
+        
+if __name__ == "__main__":
+    aspect_ratio_cal('train', 3);

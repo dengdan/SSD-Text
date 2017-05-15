@@ -73,6 +73,10 @@ tf.app.flags.DEFINE_string(
     'The directory where the model was written to or an absolute path to a '
     'checkpoint file.')
 tf.app.flags.DEFINE_string(
+    'checkpoint_iter', None,
+    'the model of this iteration will be tested. if None, the newest one will be tested')
+
+tf.app.flags.DEFINE_string(
     'eval_dir', None, 'Directory where the results are saved to.')
 tf.app.flags.DEFINE_integer(
     'num_preprocessing_threads', 4,
@@ -168,6 +172,11 @@ def main(_):
         config = tf.ConfigProto(log_device_placement=False, gpu_options=gpu_options)
         # config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_path)
+        import pdb
+        pdb.set_trace()
+        checkpoint_iter = FLAGS.checkpoint_iter;
+        if checkpoint_iter:
+            print ckpt
         saver = tf.train.Saver()
 
         def check(index, score, score_threshold = FLAGS.keep_threshold, num_threshold = FLAGS.keep_top_k):

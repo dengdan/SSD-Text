@@ -6,13 +6,13 @@
  'adagrad_initial_accumulator_value': 0.1,
  'adam_beta1': 0.9,
  'adam_beta2': 0.999,
- 'batch_size': 27,
+ 'batch_size': 21,
  'checkpoint_exclude_scopes': None,
  'checkpoint_model_scope': None,
  'checkpoint_path': None,
  'clone_on_cpu': False,
- 'dataset_dir': '/home/dengdan/dataset/SSD-tf/SynthText',
- 'dataset_name': 'synthtext',
+ 'dataset_dir': '/home/dengdan/dataset/SSD-tf/ICDAR',
+ 'dataset_name': 'icdar2013',
  'dataset_split_name': 'train',
  'end_learning_rate': 0.0001,
  'ftrl_initial_accumulator_value': 0.1,
@@ -89,22 +89,5 @@
 # =========================================================================== #
 # Training | Evaluation dataset files:
 # =========================================================================== #
-['/home/dengdan/dataset/SSD-tf/SynthText/SynthText_0.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_1.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_10.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_11.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_12.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_13.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_14.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_15.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_16.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_17.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_2.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_3.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_4.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_5.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_6.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_7.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_8.tfrecord',
- '/home/dengdan/dataset/SSD-tf/SynthText/SynthText_9.tfrecord']
+['/home/dengdan/dataset/SSD-tf/ICDAR/icdar2013_train.tfrecords']
 
