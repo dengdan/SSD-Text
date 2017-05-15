@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Generic training script that trains a SSD model using a given dataset."""
+import numpy
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
@@ -194,7 +195,7 @@ def main(_):
     # use all available gpus
     gpus = util.tf.get_available_gpus();
     num_clones = len(gpus);
-    if FLAGS.batch_size % num_clones != 0:
+    if num_clones > 1 and FLAGS.batch_size % num_clones != 0:
         raise ValueError('If multi gpus are used, the batch_size should be a multiple of the number of gpus.')
     batch_size = FLAGS.batch_size / num_clones;
     print "%d images per GPU"%(batch_size)
@@ -375,22 +376,20 @@ def main(_):
                                            first_clone_scope))
         # Merge all summaries together.
         summary_op = tf.summary.merge(list(summaries), name='summary_op')
-
+        
         # =================================================================== #
         # Kicks off the training.
         # =================================================================== #
         config = tf.ConfigProto(log_device_placement = False, allow_soft_placement = True)
-#        if FLAGS.gpu_memory_fraction < 0:
-#            config.gpu_options.allow_growth = True
-#        elif FLAGS.gpu_memory_fraction > 0:
-#            config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_memory_fraction;
+        if FLAGS.gpu_memory_fraction < 0:
+            config.gpu_options.allow_growth = True
+        elif FLAGS.gpu_memory_fraction > 0:
+            config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_memory_fraction;
         print config
-        
         saver = tf.train.Saver(max_to_keep=500,
                                keep_checkpoint_every_n_hours=1.0,
                                write_version=2,
                                pad_step_number=False)
-        
         debug_kargs = {}
         if FLAGS.should_trace:                    
             train_step_kwargs = {
