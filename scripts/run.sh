@@ -3,6 +3,7 @@ set -e
 export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 IMG_PER_GPU=$3
+SPLIT=$4
 
 # get the number of gpus
 OLD_IFS="$IFS" 
@@ -58,17 +59,17 @@ case $ACTION in
             --max_number_of_steps=400000
     ;;
     eval)
-        TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config
+        #TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config
         CKPT_PATH=$TRAIN_DIR
         MODEL_NAME=ssd_${SIZE}_vgg
-        EVAL_DIR=${TRAIN_DIR}/eval
-        CUDA_VISIBLE_DEVICES=
+        EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
+        #CUDA_VISIBLE_DEVICES=
         DATASET=$HOME/dataset/SSD-tf/ICDAR
         python eval_ssd_network.py \
             --dataset_dir=$DATASET \
             --checkpoint_path=$CKPT_PATH \
             --eval_dir=$EVAL_DIR\
-            --dataset_split_name=train \
+            --dataset_split_name=$SPLIT \
             --model_name=$MODEL_NAME
     ;;
     test)
