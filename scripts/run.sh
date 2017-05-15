@@ -1,15 +1,29 @@
 set -x
 set -e
-export CUDA_VISIBLE_DEVICES=$1
+CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
+IMG_PER_GPU=$3
+
+# get the number of gpus
+OLD_IFS="$IFS" 
+IFS="," 
+gpus=($CUDA_VISIBLE_DEVICES) 
+IFS="$OLD_IFS"
+num_gpus=${#gpus[@]}
+
+# batch_size = num_gpus * IMG_PER_GPU
+BATCH_SIZE=`expr $num_gpus \* $IMG_PER_GPU`
+
 HOME=/home/dengdan
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain/anchor4810
 CKPT_PATH=$TRAIN_DIR
 MODEL_NAME=ssd_${SIZE}_vgg
 EVAL_DIR=${TRAIN_DIR}/eval
 case $ACTION in 
     pretrain)
+        
+        
         DATASET=$HOME/dataset/SSD-tf/SynthText
         python train_ssd_network.py \
             --dataset_dir=$DATASET \
@@ -21,7 +35,7 @@ case $ACTION in
             --dataset_name=synthtext \ #icdar2013 \
             --dataset_split_name=train \
             --model_name=$MODEL_NAME \
-            --batch_size=27 \
+            --batch_size=$BATCH_SIZE \
             --should_trace=0 \
             --gpu_memory_fraction=.5 \
             --max_number_of_steps=400000 #50000
@@ -38,7 +52,7 @@ case $ACTION in
             --dataset_name=icdar2013 \
             --dataset_split_name=train \
             --model_name=$MODEL_NAME \
-            --batch_size=21 \
+            --batch_size=$BATCH_SIZE \
             --should_trace=0 \
             --gpu_memory_fraction=.5 \
             --max_number_of_steps=400000
