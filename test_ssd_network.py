@@ -46,9 +46,9 @@ tf.app.flags.DEFINE_float(
     'keep_threshold', 0.0, 'Keep detected objects with confidence not less than it')
     
 tf.app.flags.DEFINE_float(
-    'nms_threshold', 0.45, 'Non-Maximum Selection threshold.')
+    'nms_threshold', 0.1, 'Non-Maximum Selection threshold.')
 tf.app.flags.DEFINE_float(
-    'matching_threshold', 0.5, 'Matching threshold with groundtruth objects.')
+    'matching_threshold', 0.9, 'Matching threshold with groundtruth objects.')
 tf.app.flags.DEFINE_integer(
     'eval_resize', 4, 'Image resizing: None / CENTRAL_CROP / PAD_AND_RESIZE / WARP_RESIZE.')
 tf.app.flags.DEFINE_integer(
@@ -72,9 +72,6 @@ tf.app.flags.DEFINE_string(
     'checkpoint_path', None,
     'The directory where the model was written to or an absolute path to a '
     'checkpoint file.')
-tf.app.flags.DEFINE_string(
-    'checkpoint_iter', None,
-    'the model of this iteration will be tested. if None, the newest one will be tested')
 
 tf.app.flags.DEFINE_string(
     'eval_dir', None, 'Directory where the results are saved to.')
@@ -171,12 +168,12 @@ def main(_):
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_memory_fraction)
         config = tf.ConfigProto(log_device_placement=False, gpu_options=gpu_options)
         # config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
-        ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_path)
-        import pdb
-        pdb.set_trace()
-        checkpoint_iter = FLAGS.checkpoint_iter;
-        if checkpoint_iter:
-            print ckpt
+        
+        if util.io.is_dir(FLAGS.checkpoint_path):
+            ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_path)
+            ckpt_path = ckpt.model_checkpoint_path
+        else:
+            ckpt_path = FLAGS.checkpoint_path;
         saver = tf.train.Saver()
 
         def check(index, score, score_threshold = FLAGS.keep_threshold, num_threshold = FLAGS.keep_top_k):
@@ -189,6 +186,7 @@ def main(_):
           
         def write_result(image_name, image_data, bboxes, scores, path):
           filename = util.io.join_path(path, 'res_%s.txt'%(image_name))
+          bboxes = bboxes.copy()
           print filename
           h, w = image_data.shape[0:-1]
           bboxes[:, 0] = bboxes[:, 0] * h
@@ -211,6 +209,7 @@ def main(_):
           
         
         def draw_bbox(image_data, bboxes, scores, color):
+          bboxes = bboxes.copy()
           image_data = image_data.copy()
           h, w = image_data.shape[0:-1]
           bboxes[:, 0] = bboxes[:, 0] * h
@@ -224,25 +223,26 @@ def main(_):
                 bbox = bboxes[b_idx, :]
                 [ymin, xmin, ymax, xmax] = [int(v) for v in bbox]
                 util.img.rectangle(image_data, (xmin, ymin), (xmax, ymax), color = color, border_width = 1)
-                util.img.put_text(image_data, '%.3f'%(bscore), (xmin, ymin));
+                aspect_ratio = (xmax - xmin) * 1.0 / (ymax - ymin)
+                util.img.put_text(image_data, '%.3f, %.2f'%(bscore, aspect_ratio), (xmin, ymin), scale = 0.7, color=color);
           return image_data
         
           
         with tf.Session() as sess:
-          if ckpt and ckpt.model_checkpoint_path:
-            step = saver.restore(sess, ckpt.model_checkpoint_path)
+            step = saver.restore(sess, ckpt_path)
             import datasets.icdar2013_data
             data_provider = datasets.icdar2013_data.ICDAR2013Data(root_dir = FLAGS.dataset_dir, split = FLAGS.dataset_split_name)
-            dump_path = FLAGS.eval_dir
-            ckpt_name = util.io.get_filename(str(ckpt.model_checkpoint_path));
+            ckpt_name = util.io.get_filename(str(ckpt_path));
+            ckpt_dir = util.io.get_dir(str(ckpt_path));
+            dump_path = util.io.join_path(ckpt_dir, 'eval')
             xml_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name,  'xml')
             txt_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'txt')
+            zip_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, ckpt_name + '.' + FLAGS.dataset_split_name +'.zip')
             def create_zip():
-              zip_file = ckpt_name +"."+ FLAGS.dataset_split_name + '.zip'
-              cmd = 'cd %s;zip -j %s %s/*'%(dump_path, zip_file, txt_path);
+              cmd = 'cd %s;zip -j %s %s/*'%(dump_path, zip_path, txt_path);
               print cmd
               print util.cmd.cmd(cmd);
-              print "zip file created: ", util.io.join_path(dump_path, zip_file)
+              print "zip file created: ", util.io.join_path(dump_path, zip_path)
               
             image_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, "vis", "%s_%s.jpg")
             for i in xrange(data_provider.num_images):
@@ -260,7 +260,8 @@ def main(_):
             
             create_zip()
             import datasets.deteval
-            datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path);
+            result_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'fixed_eval.txt')
+            datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path, write_path = result_path);
             
           
 if __name__ == '__main__':

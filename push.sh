@@ -1,4 +1,4 @@
 git add . --all
-git commit -m "merge anchor4810 to master"
+git commit -m "test_ssd_netword modified for the convinience of analysis"
 git push  origin master
 

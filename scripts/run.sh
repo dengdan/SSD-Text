@@ -2,28 +2,35 @@ set -x
 set -e
 export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
-IMG_PER_GPU=$3
-SPLIT=$4
 
-# get the number of gpus
-OLD_IFS="$IFS" 
-IFS="," 
-gpus=($CUDA_VISIBLE_DEVICES) 
-IFS="$OLD_IFS"
-num_gpus=${#gpus[@]}
-
-# batch_size = num_gpus * IMG_PER_GPU
-BATCH_SIZE=`expr $num_gpus \* $IMG_PER_GPU`
-
-HOME=/home/dengdan
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain/anchor4810
-CKPT_PATH=$TRAIN_DIR
+HOME=/home/dengdan
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain/origin-config
+EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
-EVAL_DIR=${TRAIN_DIR}/eval
+
+if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
+then
+    IMG_PER_GPU=$3
+    
+    # get the number of gpus
+    OLD_IFS="$IFS" 
+    IFS="," 
+    gpus=($CUDA_VISIBLE_DEVICES) 
+    IFS="$OLD_IFS"
+    num_gpus=${#gpus[@]}
+
+    # batch_size = num_gpus * IMG_PER_GPU
+    BATCH_SIZE=`expr $num_gpus \* $IMG_PER_GPU`
+else
+    SPLIT=$3
+    EVAL_DIR=${TRAIN_DIR}/eval
+    CKPT_PATH=$TRAIN_DIR
+fi
+
+
 case $ACTION in 
     pretrain)
-        
         
         DATASET=$HOME/dataset/SSD-tf/SynthText
         python train_ssd_network.py \
@@ -69,22 +76,18 @@ case $ACTION in
             --dataset_dir=$DATASET \
             --checkpoint_path=$CKPT_PATH \
             --eval_dir=$EVAL_DIR\
-<<<<<<< HEAD
-            --dataset_split_name=test \
-=======
             --dataset_split_name=$SPLIT \
->>>>>>> anchor4810
             --model_name=$MODEL_NAME
     ;;
     test)
-        EVAL_DIR=$HOME/temp_nfs/ssd_results/
+        #EVAL_DIR=$HOME/temp_nfs/ssd_results/
+        CKPT_PATH=$4
         python test_ssd_network.py \
             --checkpoint_path=$CKPT_PATH \
-            --eval_dir=$EVAL_DIR\
-            --dataset_split_name=test \
+            --dataset_split_name=$SPLIT \
             --model_name=$MODEL_NAME \
             --keep_top_k=20 \
-            --keep_threshold=0.05
+            --keep_threshold=0.6
     ;;
 esac
 
