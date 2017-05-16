@@ -31,7 +31,8 @@ class ICDAR2013Data(object):
         images = [];
         bboxes = [];
         aspect_ratios = []
-        heights = []
+        heights_rel = []
+        heights_abs = []
         for idx, image_name in enumerate(image_names):
             path = util.io.join_path(data_path, image_name);
             print "\treading image: %d/%d"%(idx, len(image_names));
@@ -54,7 +55,9 @@ class ICDAR2013Data(object):
                 box = [y1 / h, x1 / w, y2 / h,  x2 / w];
                 bbox_gt.append(box);
                 aspect_ratios.append((x2 - x1)*1.0/(y2 - y1))
-                heights.append((y2 - y1) * 1.0 / h)
+                heights_rel.append((y2 - y1) * 1.0 / h)
+                heights_abs.append(y2 - y1)
+                #print y2 - y1, h, (y2 - y1) * 1.0 / h
             bbox_gt = np.asarray(bbox_gt)
             bboxes.append(bbox_gt);
             image_names[idx] = image_name
@@ -63,7 +66,8 @@ class ICDAR2013Data(object):
         
 #        util.io.dump('~/temp/no-use/as_%s.pkl'%(self.split), aspect_ratios)
         self.aspect_ratios = aspect_ratios;
-        self.heights = heights
+        self.heights_rel = heights_rel
+        self.heights_abs = heights_abs
         return images, bboxes, image_names;
         
     def vis_data(self):
@@ -131,18 +135,30 @@ def aspect_ratio_cal(split,k):
     split: train or test
     k: the N.o. centers of aspect ratios
     """
+    print split
     data_provider = ICDAR2013Data(split=split);
     aspect_ratios = data_provider.aspect_ratios
     labels, clusters, centers = util.ml.kmeans(aspect_ratios, k);
     for i in xrange(len(centers)):
         print 'Aspect ratio: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
 
-    heights = data_provider.heights
+    heights = data_provider.heights_rel
     labels, clusters, centers = util.ml.kmeans(heights, k);
     for i in xrange(len(centers)):
-        print 'Height: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
-    np.histogram(heights, normed = True)    
+        print 'Relative Height: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
+    hist, bins = np.histogram(heights, range=[0, 0.2])
+    for i in xrange(len(hist)):
+        print 'Relative Height between %f and %f: n = %d, ratio = %f'%(bins[i], bins[i+1], hist[i], hist[i]  * 1.0/ len(heights))
+
+    heights = data_provider.heights_abs
+    labels, clusters, centers = util.ml.kmeans(heights, k);
+    for i in xrange(len(centers)):
+        print 'Absolute Height: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
+    hist, bins = np.histogram(heights, range=[0, 1000])
+    for i in xrange(len(hist)):
+        print 'Absolute Height between %f and %f: n = %d, ratio = %f'%(bins[i], bins[i+1], hist[i], hist[i]  * 1.0/ len(heights))
         
 if __name__ == "__main__":
+    #aspect_ratio_cal('test', 3);
+    aspect_ratio_cal('train', 3);
     
-    aspect_ratio_cal('test', 8);
