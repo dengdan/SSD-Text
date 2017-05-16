@@ -86,7 +86,7 @@ def print_configuration(flags, ssd_params, data_sources, save_dir=None):
     if save_dir is not None:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        path = os.path.join('./scripts/training_config.txt')
+        path = os.path.join(save_dir, 'training_config.txt')
         with open(path, "w") as out:
             print_config(out)
 

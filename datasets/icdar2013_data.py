@@ -31,6 +31,7 @@ class ICDAR2013Data(object):
         images = [];
         bboxes = [];
         aspect_ratios = []
+        heights = []
         for idx, image_name in enumerate(image_names):
             path = util.io.join_path(data_path, image_name);
             print "\treading image: %d/%d"%(idx, len(image_names));
@@ -53,6 +54,7 @@ class ICDAR2013Data(object):
                 box = [y1 / h, x1 / w, y2 / h,  x2 / w];
                 bbox_gt.append(box);
                 aspect_ratios.append((x2 - x1)*1.0/(y2 - y1))
+                heights.append((y2 - y1) * 1.0 / h)
             bbox_gt = np.asarray(bbox_gt)
             bboxes.append(bbox_gt);
             image_names[idx] = image_name
@@ -61,6 +63,7 @@ class ICDAR2013Data(object):
         
 #        util.io.dump('~/temp/no-use/as_%s.pkl'%(self.split), aspect_ratios)
         self.aspect_ratios = aspect_ratios;
+        self.heights = heights
         return images, bboxes, image_names;
         
     def vis_data(self):
@@ -133,7 +136,13 @@ def aspect_ratio_cal(split,k):
     labels, clusters, centers = util.ml.kmeans(aspect_ratios, k);
     for i in xrange(len(centers)):
         print 'Aspect ratio: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
-        
+
+    heights = data_provider.heights
+    labels, clusters, centers = util.ml.kmeans(heights, k);
+    for i in xrange(len(centers)):
+        print 'Height: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
+    np.histogram(heights, normed = True)    
         
 if __name__ == "__main__":
-    aspect_ratio_cal('train', 3);
+    
+    aspect_ratio_cal('test', 8);
