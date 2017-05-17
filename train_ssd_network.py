@@ -42,7 +42,7 @@ tf.app.flags.DEFINE_float(
 # =========================================================================== #
 
 tf.app.flags.DEFINE_string('train_dir', None,'Directory where checkpoints and event logs are written to.')
-tf.app.flags.DEFINE_integer('num_clones', 1,'Number of model clones to deploy.')
+#tf.app.flags.DEFINE_integer('num_clones', 1,'Number of model clones to deploy.')
 tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
                             'Use CPUs to deploy clones.')
 tf.app.flags.DEFINE_integer(
@@ -272,7 +272,7 @@ def main(_):
             # GPUs running the training.
             batch_queue = slim.prefetch_queue.prefetch_queue(
                 tf_utils.reshape_list([b_image, b_gclasses, b_glocalisations, b_gscores]),
-                capacity=2 * deploy_config.num_clones)
+                capacity=2 * num_clones)
 
         # =================================================================== #
         # Define the model running on every GPU.
@@ -289,7 +289,7 @@ def main(_):
                                           data_format=DATA_FORMAT)
             with slim.arg_scope(arg_scope):
                 predictions, localisations, logits, end_points = \
-                    ssd_net.net(b_image, is_training=True)
+                    ssd_net.net(b_image, is_training=True) # predictions is the softmax result, can used in HNM when training
             # Add loss function.
             ssd_net.losses(logits, localisations,
                            b_gclasses, b_glocalisations, b_gscores,

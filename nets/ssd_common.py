@@ -61,7 +61,7 @@ def tf_ssd_bboxes_encode_layer(labels,
     feat_ymax = tf.ones(shape, dtype=dtype)
     feat_xmax = tf.ones(shape, dtype=dtype)
 
-    def jaccard_with_anchors(bbox):
+    def jaccard_with_anchors(bbox):# iou
         """Compute jaccard score between a box and the anchors.
         """
         int_ymin = tf.maximum(ymin, bbox[0])
@@ -77,7 +77,7 @@ def tf_ssd_bboxes_encode_layer(labels,
         jaccard = tf.div(inter_vol, union_vol)
         return jaccard
 
-    def intersection_with_anchors(bbox):
+    def intersection_with_anchors(bbox):# recall
         """Compute intersection between score a box and the anchors.
         """
         int_ymin = tf.maximum(ymin, bbox[0])
@@ -109,10 +109,10 @@ def tf_ssd_bboxes_encode_layer(labels,
         bbox = bboxes[i]
         jaccard = jaccard_with_anchors(bbox)
         # Mask: check threshold + scores + no annotations + num_classes.
-        mask = tf.greater(jaccard, feat_scores)
+        mask = tf.greater(jaccard, feat_scores) # the values in feat_scores denotes the currently max iou.
         # mask = tf.logical_and(mask, tf.greater(jaccard, matching_threshold))
-        mask = tf.logical_and(mask, feat_scores > -0.5)
-        mask = tf.logical_and(mask, label < num_classes)
+#        mask = tf.logical_and(mask, feat_scores > -0.5) # no use
+#        mask = tf.logical_and(mask, label < num_classes) #can be ignored if all gt labels are within 0 and 1.
         imask = tf.cast(mask, tf.int64)
         fmask = tf.cast(mask, dtype)
         # Update values using mask.
@@ -254,7 +254,7 @@ def tf_ssd_bboxes_decode(feat_localizations,
 # =========================================================================== #
 def tf_ssd_bboxes_select_layer(predictions_layer, localizations_layer,
                                select_threshold=None,
-                               num_classes=21,
+                               num_classes=2,
                                ignore_class=0,
                                scope=None):
     """Extract classes, scores and bounding boxes from features in one layer.
@@ -298,7 +298,7 @@ def tf_ssd_bboxes_select_layer(predictions_layer, localizations_layer,
 
 def tf_ssd_bboxes_select(predictions_net, localizations_net,
                          select_threshold=None,
-                         num_classes=21,
+                         num_classes=2,
                          ignore_class=0,
                          scope=None):
     """Extract classes, scores and bounding boxes from network output layers.

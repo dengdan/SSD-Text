@@ -296,12 +296,6 @@ def preprocess_for_train(image, labels, bboxes,
             image = tf.transpose(image, perm=(2, 0, 1))
         return image, labels, bboxes
 
-def preprocess_for_test(image):
-    image = tf.to_float(image)
-    image = tf_image_whitened(image)
-    image = tf.expand_dims(image, 0)
-    return image
-    
 def preprocess_for_eval(image, labels, bboxes,
                         out_shape=EVAL_SIZE, data_format='NHWC',
                         difficults=None, resize=Resize.WARP_RESIZE,

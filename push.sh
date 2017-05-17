@@ -1,4 +1,4 @@
 git add . --all
-git commit -m "test_ssd_netword modified for the convinience of analysis"
+git commit -m "some comments and modifications when analysis SSD. not checked."
 git push  origin master
 
