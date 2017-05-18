@@ -531,7 +531,7 @@ def ssd_losses(logits, localisations,
             with tf.name_scope('block_%i' % i):
                 # Determine weights Tensor.
                 #tf.summary.histogram('matching_score', gscores[i])
-                pmask = gscores[i] > match_threshold
+                pmask = gscores[i] >= match_threshold
                 
                 
                 tf.summary.scalar('matched_anchor', tf.reduce_sum(tf.cast(pmask, tf.float32)))
