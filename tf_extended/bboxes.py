@@ -406,6 +406,54 @@ def bboxes_filter_center(labels, bboxes, margins=[0., 0., 0., 0.],
         return labels, bboxes
 
 
+def bboxes_height_width_intersection(bbox_ref, bboxes, name=None):
+    """Compute relative intersection between a reference box and a
+    collection of bounding boxes. Namely, compute the quotient between
+    intersection area and box area.
+
+    Args:
+      bbox_ref: (N, 4) or (4,) Tensor with reference bounding box(es).
+      bboxes: (N, 4) Tensor, collection of bounding boxes.
+    Return:
+      (N,) Tensor with relative intersection.
+    """
+    with tf.name_scope(name, 'bboxes_intersection'):
+        # Should be more efficient to first transpose.
+        bboxes = tf.transpose(bboxes)
+        bbox_ref = tf.transpose(bbox_ref)
+        # Intersection bbox and volume.
+        int_ymin = tf.maximum(bboxes[0], bbox_ref[0])
+        int_xmin = tf.maximum(bboxes[1], bbox_ref[1])
+        int_ymax = tf.minimum(bboxes[2], bbox_ref[2])
+        int_xmax = tf.minimum(bboxes[3], bbox_ref[3])
+        h = tf.maximum(int_ymax - int_ymin, 0.)
+        w = tf.maximum(int_xmax - int_xmin, 0.)
+        
+        height_inter = tfe_math.safe_divide(h , (bboxes[2] - bboxes[0]), 'height_inter')
+        width_inter = tfe_math.safe_divide(w , (bboxes[3] - bboxes[1]), 'width_inter')
+        return height_inter, width_inter
+        
+def bboxes_filter_height_width(labels, bboxes, width_threshold, height_threshold, assign_negative=False, scope=None):
+    """Filter out bounding boxes based on (relative )overlap in height with reference
+    box [0, 0, 1, 1].  Remove completely bounding boxes, or assign negative
+    labels to the one outside (useful for latter processing...).
+
+    Return:
+      labels, bboxes: Filtered (or newly assigned) elements.
+    """
+    with tf.name_scope(scope, 'bboxes_filter', [labels, bboxes]):
+        height_inter, width_inter = bboxes_height_width_intersection(tf.constant([0, 0, 1, 1], bboxes.dtype), bboxes)
+        
+        mask = tf.logical_and(height_inter > height_threshold, width_inter > width_threshold)
+        if assign_negative:
+            labels = tf.where(mask, labels, -labels)
+            # bboxes = tf.where(mask, bboxes, bboxes)
+        else:
+            labels = tf.boolean_mask(labels, mask, name = 'label_mask')
+            bboxes = tf.boolean_mask(bboxes, mask, name = 'bbox_mask')
+        return labels, bboxes
+
+
 def bboxes_filter_overlap(labels, bboxes,
                           threshold=0.5, assign_negative=False,
                           scope=None):

@@ -26,6 +26,8 @@ from preprocessing import tf_image
 from nets import ssd_common
 
 slim = tf.contrib.slim
+FLAGS = tf.app.flags.FLAGS
+
 
 # Resizing strategies.
 Resize = IntEnum('Resize', ('NONE',                # Nothing!
@@ -40,10 +42,8 @@ _B_MEAN = 104.
 
 # Some training pre-processing parameters.
 BBOX_CROP_OVERLAP = 0.2         # Minimum overlap to keep a bbox after cropping.
-MIN_OBJECT_COVERED = 0.25 # the preprocessed image must contain at least such a portion of an object.
 CROP_RATIO_RANGE = (0.6, 1.67)  # Distortion ratio during cropping.
-EVAL_SIZE = (300, 300)
-
+AREA_RANGE = (0.3, 1.0)
 
 def tf_image_whitened(image, means=[_R_MEAN, _G_MEAN, _B_MEAN]):
     """Subtracts the given means from each image channel.
@@ -98,7 +98,7 @@ def tf_summary_image(image, bboxes, name='image', unwhitened=False):
     image = tf.expand_dims(image, 0)
     bboxes = tf.expand_dims(bboxes, 0)
     image_with_box = tf.image.draw_bounding_boxes(image, bboxes)
-    tf.summary.image(name, image_with_box)
+    tf.summary.image(name, image_with_box, max_outputs = 15)
 
 
 def apply_with_random_selector(x, func, num_cases):
@@ -176,9 +176,9 @@ def distort_color(image, color_ordering=0, fast_mode=True, scope=None):
 def distorted_bounding_box_crop(image,
                                 labels,
                                 bboxes,
-                                min_object_covered=0.3,
-                                aspect_ratio_range=(0.9, 1.1),
-                                area_range=(0.1, 1.0),
+                                min_object_covered,
+                                aspect_ratio_range,
+                                area_range,
                                 max_attempts=200,
                                 clip_bboxes=True,
                                 scope=None):
@@ -206,6 +206,7 @@ def distorted_bounding_box_crop(image,
     Returns:
         A tuple, a 3-D Tensor cropped_image and the distorted bbox
     """
+
     with tf.name_scope(scope, 'distorted_bounding_box_crop', [image, bboxes]):
         # Each bounding box has shape [1, num_boxes, box coords] and
         # the coordinates are ordered [ymin, xmin, ymax, xmax].
@@ -226,9 +227,10 @@ def distorted_bounding_box_crop(image,
 
         # Update bounding boxes: resize and filter out.
         bboxes = tfe.bboxes_resize(distort_bbox, bboxes)
-        labels, bboxes = tfe.bboxes_filter_overlap(labels, bboxes,
-                                                   threshold=BBOX_CROP_OVERLAP,
-                                                   assign_negative=False)
+#        labels, bboxes = tfe.bboxes_filter_overlap(labels, bboxes,
+#                                                   threshold=BBOX_CROP_OVERLAP,
+#                                                   assign_negative=False)
+        labels, bboxes = tfe.bboxes_filter_height_width(labels, bboxes, width_threshold = FLAGS.min_width_covered, height_threshold = FLAGS.min_height_covered)       
         return cropped_image, labels, bboxes, distort_bbox
 
 
@@ -268,10 +270,13 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Distort image and bounding boxes.
         dst_image = image
+#        bboxes = tf.Print(bboxes, ['Before random crop:', tf.shape(bboxes), tf.shape(image)])
         dst_image, labels, bboxes, distort_bbox = \
             distorted_bounding_box_crop(image, labels, bboxes,
-                                        min_object_covered=MIN_OBJECT_COVERED,
-                                        aspect_ratio_range=CROP_RATIO_RANGE)
+                                        min_object_covered=FLAGS.min_object_covered,
+                                        aspect_ratio_range=CROP_RATIO_RANGE,
+                                        area_range = AREA_RANGE)
+#        bboxes = tf.Print(bboxes, ['After random crop:',tf.shape(bboxes), tf.shape(dst_image), distort_bbox])
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,
                                           method=tf.image.ResizeMethod.BILINEAR,
@@ -279,7 +284,7 @@ def preprocess_for_train(image, labels, bboxes,
         tf_summary_image(dst_image, bboxes, 'image_shape_distorted')
 
         # Randomly flip the image horizontally.
-        dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
+        #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
 
         # Randomly distort the colors. There are 4 ways to do it.
         dst_image = apply_with_random_selector(
@@ -297,7 +302,7 @@ def preprocess_for_train(image, labels, bboxes,
         return image, labels, bboxes
 
 def preprocess_for_eval(image, labels, bboxes,
-                        out_shape=EVAL_SIZE, data_format='NHWC',
+                        out_shape, data_format='NHWC',
                         difficults=None, resize=Resize.WARP_RESIZE,
                         scope='ssd_preprocessing_train'):
     """Preprocess an image for evaluation.

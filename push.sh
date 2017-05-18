@@ -1,4 +1,4 @@
 git add . --all
-git commit -m "some comments and modifications when analysis SSD. not checked."
-git push  origin master
+git commit -m "add branch optm1"
+git push -u origin optm1
 

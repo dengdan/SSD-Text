@@ -20,7 +20,7 @@ from tensorflow.python.ops import control_flow_ops
 from datasets import dataset_factory
 from deployment import model_deploy
 from nets import nets_factory
-from preprocessing import preprocessing_factory
+
 import tf_utils
 import util
 slim = tf.contrib.slim
@@ -45,18 +45,24 @@ tf.app.flags.DEFINE_string('train_dir', None,'Directory where checkpoints and ev
 #tf.app.flags.DEFINE_integer('num_clones', 1,'Number of model clones to deploy.')
 tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
                             'Use CPUs to deploy clones.')
+                        
 tf.app.flags.DEFINE_integer(
     'num_readers', 4,
     'The number of parallel readers that read data from the dataset.')
 tf.app.flags.DEFINE_integer(
-    'num_preprocessing_threads', 8,
+    'num_preprocessing_threads', 1,
     'The number of threads used to create the batches.')
-
+tf.app.flags.DEFINE_float(
+    'min_object_covered', 0.9, 'The cropped area of the image must contain at least this fraction of any bounding box supplied, used in preprocessing')
+tf.app.flags.DEFINE_float(
+    'min_width_covered', 0.5, 'The minimal fraction of covered width needed to keep that bbox in the cropped image , used in preprocessing')
+tf.app.flags.DEFINE_float(
+    'min_height_covered', 0.95, 'The minimal fraction of covered height needed to keep that bbox in the cropped image, used in preprocessing')
 tf.app.flags.DEFINE_integer(
     'log_every_n_steps', 10,
     'The frequency with which logs are print.')
 tf.app.flags.DEFINE_integer(
-    'save_summaries_secs', 600,
+    'save_summaries_secs', 5,
     'The frequency with which summaries are saved, in seconds.')
 tf.app.flags.DEFINE_integer(
     'save_interval_secs', 600,
@@ -189,7 +195,7 @@ FLAGS = tf.app.flags.FLAGS
 def main(_):
     if not FLAGS.dataset_dir:
         raise ValueError('You must supply the dataset directory with --dataset_dir')
-
+    util.init_logger(log_file = 'train_on_%s.log'%(FLAGS.dataset_name), log_path = FLAGS.train_dir)
     tf.logging.set_verbosity(tf.logging.DEBUG)
     
     # use all available gpus
@@ -224,7 +230,10 @@ def main(_):
         ssd_anchors = ssd_net.anchors(ssd_shape)
         util.proc.set_proc_name(FLAGS.model_name + '_' + FLAGS.dataset_name)
         # Select the preprocessing function.
+        
         preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
+        from preprocessing import preprocessing_factory
+        from preprocessing import ssd_vgg_preprocessing
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
             preprocessing_name, is_training=True)
 
@@ -283,7 +292,7 @@ def main(_):
             # Dequeue batch.
             b_image, b_gclasses, b_glocalisations, b_gscores = \
                 tf_utils.reshape_list(batch_queue.dequeue(), batch_shape)
-
+            
             # Construct SSD network.
             arg_scope = ssd_net.arg_scope(weight_decay=FLAGS.weight_decay,
                                           data_format=DATA_FORMAT)
@@ -362,7 +371,6 @@ def main(_):
             var_list=variables_to_train)
         # Add total_loss to summary.
         summaries.add(tf.summary.scalar('total_loss', total_loss))
-
         # Create gradient updates.
         grad_updates = optimizer.apply_gradients(clones_gradients,
                                                  global_step=global_step)
@@ -387,10 +395,11 @@ def main(_):
             config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_memory_fraction;
         print config
         saver = tf.train.Saver(max_to_keep=500,
-                               keep_checkpoint_every_n_hours=1.0,
+                              # keep_checkpoint_every_n_hours=0.5,
                                write_version=2,
                                pad_step_number=False)
         debug_kargs = {}
+        save_summaries_secs = FLAGS.save_summaries_secs
         if FLAGS.should_trace:                    
             train_step_kwargs = {
               'should_trace':tf.constant(1), 
@@ -401,6 +410,7 @@ def main(_):
                 "train_step_kwargs":train_step_kwargs,
                 "trace_every_n_steps":trace_every_n_steps
             }
+            save_summaries_secs = 3
 
         slim.learning.train(
             train_tensor,
@@ -411,7 +421,7 @@ def main(_):
             summary_op=summary_op,
             number_of_steps=FLAGS.max_number_of_steps,
             log_every_n_steps=FLAGS.log_every_n_steps,
-            save_summaries_secs=FLAGS.save_summaries_secs,
+            save_summaries_secs= save_summaries_secs,
             saver=saver,
             save_interval_secs=FLAGS.save_interval_secs,
             session_config=config,

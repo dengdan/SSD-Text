@@ -70,40 +70,32 @@ class SSDNet(object):
       conv9 ==> 8 x 8
       conv10 ==> 4 x 4
       conv11 ==> 2 x 2
-      conv12 ==> 1 x 1
     The default image size used to train this network is 512x512.
     """
     default_params = SSDParams(
         img_shape=(512, 512),
         num_classes=21,
         no_annotation_label=21,
-        feat_layers=['block4', 'block7', 'block8', 'block9', 'block10', 'block11', 'block12'],
-        feat_shapes=[(64, 64), (32, 32), (16, 16), (8, 8), (4, 4), (2, 2), (1, 1)],
-        anchor_size_bounds=[0.10, 0.90],
-        anchor_sizes=[(20.48, 51.2),
-                      (51.2, 133.12),
-                      (133.12, 215.04),
-                      (215.04, 296.96),
-                      (296.96, 378.88),
-                      (378.88, 460.8),
-                      (460.8, 542.72)],
-        anchor_ratios=[[2, .5],
-               [2, .5, 3, 1./3],
-               [2, .5, 3, 1./3],
-               [2, .5, 3, 1./3],
-               [2, .5, 3, 1./3],
-               [2, .5],
-               [2, .5]],
-#        anchor_ratios=[[4, 8],
-#                       [4, 8, 10],
-#                       [4, 8, 10],
-#                       [4, 8, 10],
-#                       [4, 8, 10],
-#                       [4, 8],
-#                       [4, 8]],
-        anchor_steps=[8, 16, 32, 64, 128, 256, 512],
+        feat_layers=['block4', 'block7', 'block8', 'block9', 'block10', 'block11'],
+        feat_shapes=[(64, 64), (32, 32), (16, 16), (8, 8), (4, 4), (2, 2)],
+        anchor_size_bounds=[0.10, 0.80],
+        anchor_sizes=[[51.2],
+                        [122.9],
+                        [194.6],
+                        [266.2],
+                        [337.9],
+                        [409.6]
+                    ],
+        anchor_ratios=[[3, 6, 9],
+               [3, 6, 9],
+               [3, 6, 9],
+               [3, 6, 9],
+               [3, 6, 9],
+               [3, 6],
+               [3]],
+        anchor_steps=[8, 16, 32, 64, 128, 256],
         anchor_offset=0.5,
-        normalizations=[20, -1, -1, -1, -1, -1, -1],
+        normalizations=[20, -1, -1, -1, -1, -1],
         prior_scaling=[0.1, 0.1, 0.2, 0.2]
         )
 
@@ -438,15 +430,6 @@ def ssd_net(inputs,
             net = custom_layers.pad2d(net, pad=(1, 1))
             net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
         end_points[end_point] = net
-        end_point = 'block12'
-        with tf.variable_scope(end_point):
-            net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-            net = custom_layers.pad2d(net, pad=(1, 1))
-            net = slim.conv2d(net, 256, [4, 4], scope='conv4x4', padding='VALID')
-            # Fix padding to match Caffe version (pad=1).
-            # pad_shape = [(i-j) for i, j in zip(layer_shape(net), [0, 1, 1, 0])]
-            # net = tf.slice(net, [0, 0, 0, 0], pad_shape, name='caffe_pad')
-        end_points[end_point] = net
 
         # Prediction and localisations layers.
         predictions = []
@@ -547,7 +530,11 @@ def ssd_losses(logits, localisations,
             dtype = logits[i].dtype
             with tf.name_scope('block_%i' % i):
                 # Determine weights Tensor.
+                #tf.summary.histogram('matching_score', gscores[i])
                 pmask = gscores[i] > match_threshold
+                
+                
+                tf.summary.scalar('matched_anchor', tf.reduce_sum(tf.cast(pmask, tf.float32)))
                 fpmask = tf.cast(pmask, dtype)
                 n_positives = tf.reduce_sum(fpmask)
 

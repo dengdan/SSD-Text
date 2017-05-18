@@ -16,9 +16,8 @@
 on a given dataset."""
 import math
 import sys
-import six
 import time
-
+import logging
 import numpy as np
 import tensorflow as tf
 import tf_extended as tfe
@@ -101,8 +100,8 @@ tf.app.flags.DEFINE_boolean(
 
 FLAGS = tf.app.flags.FLAGS
 
-
-def main(_):
+        
+def test():
     if not FLAGS.dataset_dir:
         raise ValueError('You must supply the dataset directory with --dataset_dir')
 
@@ -169,13 +168,14 @@ def main(_):
         config = tf.ConfigProto(log_device_placement=False, gpu_options=gpu_options)
         # config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         
+        
         if util.io.is_dir(FLAGS.checkpoint_path):
             ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_path)
             ckpt_path = ckpt.model_checkpoint_path
         else:
             ckpt_path = FLAGS.checkpoint_path;
         saver = tf.train.Saver()
-
+        logging.info('ckpt_path = %s'%(ckpt_path))
         def check(index, score, score_threshold = FLAGS.keep_threshold, num_threshold = FLAGS.keep_top_k):
           if score < score_threshold:
             return False
@@ -263,6 +263,13 @@ def main(_):
             result_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'fixed_eval.txt')
             datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path, write_path = result_path);
             
-          
+def main(_):
+    if FLAGS.wait_for_checkpoints:
+        while True:
+            test()
+            time.sleep(600)
+    else:
+        test()
+            
 if __name__ == '__main__':
     tf.app.run()

@@ -5,7 +5,7 @@ ACTION=$2
 
 SIZE=512
 HOME=/home/dengdan
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain/origin-config
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/optm1
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
@@ -45,8 +45,11 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
             --should_trace=0 \
-            --gpu_memory_fraction=0.5 \
-            --max_number_of_steps=400000 #50000
+#            --gpu_memory_fraction=0.5 \
+            --min_object_covered=0.95 \
+            --min_width_covered=0.25 \
+            --min_height_covered=0.9 \
+            --max_number_of_steps=60000
     ;;
     train)
         DATASET=$HOME/dataset/SSD-tf/ICDAR
@@ -62,7 +65,10 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
             --should_trace=0 \
-            --gpu_memory_fraction=.5 \
+            --min_object_covered=0.95 \
+#            --gpu_memory_fraction=.5 \
+            --min_width_covered=0.3 \
+            --min_height_covered=0.95 \
             --max_number_of_steps=400000
     ;;
     eval)
@@ -82,11 +88,19 @@ case $ACTION in
     test)
         #EVAL_DIR=$HOME/temp_nfs/ssd_results/
         CKPT_PATH=$4
+        if [ $5 ]
+        then
+            wait_for_checkpoints=$5
+        else
+            wait_for_checkpoints=0
+        fi
+        
         python test_ssd_network.py \
             --checkpoint_path=$CKPT_PATH \
             --dataset_split_name=$SPLIT \
             --model_name=$MODEL_NAME \
             --keep_top_k=20 \
+            --wait_for_checkpoints=${wait_for_checkpoints} \
             --keep_threshold=0.6
     ;;
 esac

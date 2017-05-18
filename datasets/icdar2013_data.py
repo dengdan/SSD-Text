@@ -56,7 +56,7 @@ class ICDAR2013Data(object):
                 bbox_gt.append(box);
                 aspect_ratios.append((x2 - x1)*1.0/(y2 - y1))
                 heights_rel.append((y2 - y1) * 1.0 / h)
-                heights_abs.append(y2 - y1)
+                heights_abs.append((y2 - y1) * 1.0 / h * 512)
                 #print y2 - y1, h, (y2 - y1) * 1.0 / h
             bbox_gt = np.asarray(bbox_gt)
             bboxes.append(bbox_gt);
@@ -154,11 +154,11 @@ def aspect_ratio_cal(split,k):
     labels, clusters, centers = util.ml.kmeans(heights, k);
     for i in xrange(len(centers)):
         print 'Absolute Height: %f, n: %d, ratio: %f'%(centers[i], len(clusters[i]),len(clusters[i]) * 1./len(aspect_ratios))
-    hist, bins = np.histogram(heights, range=[0, 1000])
+    hist, bins = np.histogram(heights, range=[0, 52])
     for i in xrange(len(hist)):
         print 'Absolute Height between %f and %f: n = %d, ratio = %f'%(bins[i], bins[i+1], hist[i], hist[i]  * 1.0/ len(heights))
         
 if __name__ == "__main__":
     #aspect_ratio_cal('test', 3);
-    aspect_ratio_cal('train', 3);
+    aspect_ratio_cal('test', 3);
     
