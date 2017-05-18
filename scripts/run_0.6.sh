@@ -56,7 +56,7 @@ case $ACTION in
         python train_ssd_network.py \
             --dataset_dir=$DATASET \
             --negative_ratio=3 \
-            --match_threshold=0.5 \
+            --match_threshold=0.6 \
             --train_dir=$TRAIN_DIR \
             --learning_rate_decay_type=fixed \
             --learning_rate=0.0001 \
