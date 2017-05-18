@@ -47,10 +47,10 @@ tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
                             'Use CPUs to deploy clones.')
                         
 tf.app.flags.DEFINE_integer(
-    'num_readers', 4,
+    'num_readers', 8,
     'The number of parallel readers that read data from the dataset.')
 tf.app.flags.DEFINE_integer(
-    'num_preprocessing_threads', 8,
+    'num_preprocessing_threads', 4,
     'The number of threads used to create the batches.')
 tf.app.flags.DEFINE_float(
     'min_object_covered', 0.9, 'The cropped area of the image must contain at least this fraction of any bounding box supplied, used in preprocessing')
