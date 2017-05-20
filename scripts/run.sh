@@ -89,6 +89,7 @@ case $ACTION in
             --dataset_dir=$DATASET \
             --checkpoint_path=$CKPT_PATH \
             --eval_dir=$EVAL_DIR\
+            --loss_weighted_blocks=${WEIGHTED_BLOCK} \
             --dataset_split_name=$SPLIT \
             --model_name=$MODEL_NAME
     ;;
