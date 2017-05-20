@@ -138,7 +138,7 @@ def main(_):
         # Create a dataset provider and batches.
         # =================================================================== #
         with tf.device('/cpu:0'):
-            with tf.name_scope(FLAGS.dataset_name + '_data_provider'):
+            with tf.name_scope(FLAGS.dataset_name +"_" +FLAGS.dataset_split_name +'_data_provider'):
                 provider = slim.dataset_data_provider.DatasetDataProvider(
                     dataset,
                     common_queue_capacity=2 * FLAGS.batch_size,

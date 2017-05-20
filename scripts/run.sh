@@ -5,10 +5,12 @@ ACTION=$2
 
 SIZE=512
 HOME=/home/dengdan
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/optm1
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/optm2
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
+LOSS_ALPHA=0.1
+LR=0.001
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3
@@ -48,8 +50,10 @@ case $ACTION in
 #            --gpu_memory_fraction=0.5 \
             --min_object_covered=0.95 \
             --min_width_covered=0.25 \
-            --min_height_covered=0.9 \
-            --max_number_of_steps=60000
+            --min_height_covered=0.8 \
+            --loss_alpha=${LOSS_ALPHA} \
+            --learning_rate=${LR} \
+            --max_number_of_steps=50000
     ;;
     train)
         DATASET=$HOME/dataset/SSD-tf/ICDAR
@@ -69,7 +73,9 @@ case $ACTION in
 #            --gpu_memory_fraction=.5 \
             --min_width_covered=0.3 \
             --min_height_covered=0.95 \
-            --max_number_of_steps=400000
+            --learning_rate=${LR} \
+            --loss_alpha=${LOSS_ALPHA} \
+            --max_number_of_steps=10000
     ;;
     eval)
         #TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config
