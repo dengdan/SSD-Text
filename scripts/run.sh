@@ -76,7 +76,7 @@ case $ACTION in
         CKPT_PATH=$TRAIN_DIR
         MODEL_NAME=ssd_${SIZE}_vgg
         EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
-        #CUDA_VISIBLE_DEVICES=
+        CUDA_VISIBLE_DEVICES=
         DATASET=$HOME/dataset/SSD-tf/ICDAR
         python eval_ssd_network.py \
             --dataset_dir=$DATASET \
@@ -87,6 +87,7 @@ case $ACTION in
     ;;
     test)
         #EVAL_DIR=$HOME/temp_nfs/ssd_results/
+	CUDA_VISIBLE_DEVICES=
         CKPT_PATH=$4
         if [ $5 ]
         then

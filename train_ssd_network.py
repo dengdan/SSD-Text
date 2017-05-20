@@ -195,7 +195,7 @@ FLAGS = tf.app.flags.FLAGS
 def main(_):
     if not FLAGS.dataset_dir:
         raise ValueError('You must supply the dataset directory with --dataset_dir')
-    util.init_logger(log_file = 'train_on_%s.log'%(FLAGS.dataset_name), log_path = FLAGS.train_dir)
+    util.init_logger(log_file = 'train_on_%s.log'%(FLAGS.dataset_name), log_path = FLAGS.train_dir, mode='a')
     tf.logging.set_verbosity(tf.logging.DEBUG)
     
     # use all available gpus

@@ -235,6 +235,7 @@ def test():
             ckpt_name = util.io.get_filename(str(ckpt_path));
             ckpt_dir = util.io.get_dir(str(ckpt_path));
             dump_path = util.io.join_path(ckpt_dir, 'eval')
+            util.init_logger(log_file='test.log', log_path = dump_path, mode = 'w')
             xml_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name,  'xml')
             txt_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'txt')
             zip_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, ckpt_name + '.' + FLAGS.dataset_split_name +'.zip')

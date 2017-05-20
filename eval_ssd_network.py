@@ -102,7 +102,7 @@ tf.app.flags.DEFINE_boolean(
 
 
 FLAGS = tf.app.flags.FLAGS
-
+util.init_logger(log_file='eval.log', log_path = FLAGS.eval_dir, mode = 'a')
 
 def main(_):
     if not FLAGS.dataset_dir:
