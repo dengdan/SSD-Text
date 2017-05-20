@@ -11,6 +11,7 @@ MODEL_NAME=ssd_${SIZE}_vgg
 
 LOSS_ALPHA=0.1
 LR=0.001
+WEIGHTED_BLOCK=0
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3
@@ -53,6 +54,7 @@ case $ACTION in
             --min_height_covered=0.8 \
             --loss_alpha=${LOSS_ALPHA} \
             --learning_rate=${LR} \
+            --loss_weighted_blocks=${WEIGHTED_BLOCK} \
             --max_number_of_steps=50000
     ;;
     train)
@@ -75,6 +77,7 @@ case $ACTION in
             --min_height_covered=0.95 \
             --learning_rate=${LR} \
             --loss_alpha=${LOSS_ALPHA} \
+            --loss_weighted_blocks=${WEIGHTED_BLOCK} \
             --max_number_of_steps=10000
     ;;
     eval)
