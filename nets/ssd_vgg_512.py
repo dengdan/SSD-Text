@@ -503,13 +503,21 @@ def ssd_arg_scope_caffe(caffe_scope):
 # =========================================================================== #
 # SSD loss function.
 # =========================================================================== #
+def get_block_weights(n_blocks, use_weights = False):
+    if use_weights:
+        weights = np.asarray([0.7, 0.1] + [0.2 / (n_blocks - 2)] * (n_blocks - 2)) * n_blocks
+    else:
+        weights = np.asarray([1.0] * n_blocks)
+    return weights;
+    
+    
 def ssd_losses(logits, localisations,
                gclasses, glocalisations, gscores,
                match_threshold=0.5,
                negative_ratio=3.,
                alpha=1.,
                label_smoothing=0.,
-               scope=None):
+               scope=None, loss_weighted_blocks = False):
     """Loss functions for training the SSD 300 VGG network.
 
     This function defines the different loss components of the SSD, and
@@ -526,9 +534,11 @@ def ssd_losses(logits, localisations,
         l_cross_pos = []
         l_cross_neg = []
         l_loc = []
+        block_weights = get_block_weights(len(logits), loss_weighted_blocks);
         for i in range(len(logits)):
             dtype = logits[i].dtype
             with tf.name_scope('block_%i' % i):
+                block_weight = block_weights[i]
                 # Determine weights Tensor.
                 #tf.summary.histogram('matching_score', gscores[i])
                 pmask = gscores[i] >= match_threshold
@@ -584,11 +594,11 @@ def ssd_losses(logits, localisations,
 #                    l_cross_neg.append(loss)
                 loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i], labels=gclasses[i])
                 with tf.name_scope('cross_entropy_pos'):
-                    loss_pos = tf.losses.compute_weighted_loss(loss, fpmask) #mean is calculated
+                    loss_pos = tf.losses.compute_weighted_loss(loss, fpmask) * block_weight #mean is calculated
                     l_cross_pos.append(loss_pos)
                     
                 with tf.name_scope('cross_entropy_neg'):
-                    loss_neg = tf.losses.compute_weighted_loss(loss, fnmask)
+                    loss_neg = tf.losses.compute_weighted_loss(loss, fnmask) * block_weight
                     l_cross_neg.append(loss_neg)
                     
                 #loss = tf.losses.compute_weighted_loss(loss, fnmask + fnmask)
@@ -598,7 +608,7 @@ def ssd_losses(logits, localisations,
                     # Weights Tensor: positive mask + random negative.
                     weights = tf.expand_dims(alpha * fpmask, axis=-1)
                     loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
-                    loss = tf.losses.compute_weighted_loss(loss, weights)
+                    loss = tf.losses.compute_weighted_loss(loss, weights) * block_weight
                     l_loc.append(loss)
 
         # Additional total losses...

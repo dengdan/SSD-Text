@@ -30,6 +30,8 @@ DATA_FORMAT = 'NCHW'
 # =========================================================================== #
 # SSD Network flags.
 # =========================================================================== #
+tf.app.flags.DEFINE_boolean(
+    'loss_weighted_blocks', False, 'Use different weights for different blocks when calculating loss')
 tf.app.flags.DEFINE_float(
     'loss_alpha', 1., 'Alpha parameter in the loss function.')
 tf.app.flags.DEFINE_float(
@@ -305,7 +307,8 @@ def main(_):
                            match_threshold=FLAGS.match_threshold,
                            negative_ratio=FLAGS.negative_ratio,
                            alpha=FLAGS.loss_alpha,
-                           label_smoothing=FLAGS.label_smoothing)
+                           label_smoothing=FLAGS.label_smoothing,
+                           loss_weighted_blocks = FLAGS.loss_weighted_blocks)
             return end_points
 
         # Gather initial summaries.
