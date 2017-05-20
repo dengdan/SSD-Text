@@ -10,8 +10,8 @@ EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
 LOSS_ALPHA=0.1
-LR=0.001
-WEIGHTED_BLOCK=0
+LR=0.0001
+WEIGHTED_BLOCK=1
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3
@@ -48,7 +48,6 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
             --should_trace=0 \
-#            --gpu_memory_fraction=0.5 \
             --min_object_covered=0.95 \
             --min_width_covered=0.25 \
             --min_height_covered=0.8 \
@@ -72,7 +71,6 @@ case $ACTION in
             --batch_size=$BATCH_SIZE \
             --should_trace=0 \
             --min_object_covered=0.95 \
-#            --gpu_memory_fraction=.5 \
             --min_width_covered=0.3 \
             --min_height_covered=0.95 \
             --learning_rate=${LR} \

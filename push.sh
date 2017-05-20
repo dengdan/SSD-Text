@@ -1,4 +1,4 @@
 git add . --all
-git commit -m "add weighted block in branch optm2"
+git commit -m "fix a bug in run.sh caused by comment"
 git push -u origin optm2
 
