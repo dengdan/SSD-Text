@@ -536,7 +536,7 @@ def ssd_losses(logits, localisations,
         l_cross_neg = []
         l_loc = []
         block_weights = get_block_weights(len(logits), loss_weighted_blocks);
-        logging.info("block weights",block_weights)
+        logging.info("block weights: %s"%(str(block_weights)))
         for i in range(len(logits)):
             dtype = logits[i].dtype
             with tf.name_scope('block_%i' % i):
