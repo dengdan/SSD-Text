@@ -205,7 +205,7 @@ class SSDNet(object):
                negative_ratio=3.,
                alpha=1.,
                label_smoothing=0.,
-               scope='ssd_losses'):
+               scope='ssd_losses', loss_weighted_blocks = False):
         """Define the SSD network losses.
         """
         return ssd_losses(logits, localisations,
@@ -214,6 +214,7 @@ class SSDNet(object):
                           negative_ratio=negative_ratio,
                           alpha=alpha,
                           label_smoothing=label_smoothing,
+                          loss_weighted_blocks = loss_weighted_blocks,
                           scope=scope)
 
 
@@ -535,6 +536,7 @@ def ssd_losses(logits, localisations,
         l_cross_neg = []
         l_loc = []
         block_weights = get_block_weights(len(logits), loss_weighted_blocks);
+        logging.info("block weights",block_weights)
         for i in range(len(logits)):
             dtype = logits[i].dtype
             with tf.name_scope('block_%i' % i):
