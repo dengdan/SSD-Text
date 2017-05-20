@@ -30,7 +30,7 @@ Usage:
 """
 import math
 from collections import namedtuple
-
+import logging
 import numpy as np
 import tensorflow as tf
 
