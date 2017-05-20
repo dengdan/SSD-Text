@@ -11,7 +11,7 @@ MODEL_NAME=ssd_${SIZE}_vgg
 
 LOSS_ALPHA=0.1
 LR=0.0001
-WEIGHTED_BLOCK=1
+WEIGHTED_BLOCK=0
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3

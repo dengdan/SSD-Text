@@ -535,6 +535,7 @@ def ssd_losses(logits, localisations,
         l_cross_pos = []
         l_cross_neg = []
         l_loc = []
+        l_cls = []
         block_weights = get_block_weights(len(logits), loss_weighted_blocks);
         logging.info("block weights: %s"%(str(block_weights)))
         for i in range(len(logits)):
@@ -603,6 +604,9 @@ def ssd_losses(logits, localisations,
                     loss_neg = tf.losses.compute_weighted_loss(loss, fnmask) * block_weight
                     l_cross_neg.append(loss_neg)
                     
+                with tf.name_scope('cross_entropy')::
+                    cross = tf.add(loss_pos, loss_neg, name = 'cls')
+                    l_cls.append(cross)
                 #loss = tf.losses.compute_weighted_loss(loss, fnmask + fnmask)
 
                 # Add localization loss: smooth L1, L2, ...
@@ -625,3 +629,4 @@ def ssd_losses(logits, localisations,
             tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
             tf.add_to_collection('EXTRA_LOSSES', total_cross)
             tf.add_to_collection('EXTRA_LOSSES', total_loc)
+            tf.add_to_collection('EXTRA_LOSSES', loss_cls)
