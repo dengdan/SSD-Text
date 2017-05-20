@@ -597,24 +597,23 @@ def ssd_losses(logits, localisations,
 #                    l_cross_neg.append(loss)
                 loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i], labels=gclasses[i])
                 with tf.name_scope('cross_entropy_pos'):
-                    loss_pos = tf.losses.compute_weighted_loss(loss, fpmask) #* block_weight #mean is calculated
+                    loss_pos = tf.losses.compute_weighted_loss(loss, 2.0 / (1 + alpha) * fpmask * block_weight) #* block_weight #mean is calculated
                     l_cross_pos.append(loss_pos)
                     
                 with tf.name_scope('cross_entropy_neg'):
-                    loss_neg = tf.losses.compute_weighted_loss(loss, fnmask) #* block_weight
+                    loss_neg = tf.losses.compute_weighted_loss(loss, 2.0 / (1 + alpha)* fnmask * block_weight) #* block_weight
                     l_cross_neg.append(loss_neg)
                     
-                with tf.name_scope('cross_entropy')::
+                with tf.name_scope('cls_loss'):
                     cross = tf.add(loss_pos, loss_neg, name = 'cls')
-                    l_cls.append(cross)
+                    tf.summary.scalar('cls_loss', cross)
                 #loss = tf.losses.compute_weighted_loss(loss, fnmask + fnmask)
 
                 # Add localization loss: smooth L1, L2, ...
                 with tf.name_scope('localization'):
-                    # Weights Tensor: positive mask + random negative.
-                    weights = tf.expand_dims(alpha * fpmask, axis=-1)
+                    weights = tf.expand_dims(alpha * 2.0 / (1 + alpha)* fpmask * block_weight, axis=-1)
                     loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
-                    loss = tf.losses.compute_weighted_loss(loss, weights) * block_weight
+                    loss = tf.losses.compute_weighted_loss(loss, weights)
                     l_loc.append(loss)
 
         # Additional total losses...
@@ -629,4 +628,3 @@ def ssd_losses(logits, localisations,
             tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
             tf.add_to_collection('EXTRA_LOSSES', total_cross)
             tf.add_to_collection('EXTRA_LOSSES', total_loc)
-            tf.add_to_collection('EXTRA_LOSSES', loss_cls)
