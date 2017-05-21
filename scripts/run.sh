@@ -5,11 +5,11 @@ ACTION=$2
 
 SIZE=512
 HOME=/home/dengdan
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/optm2.11
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/inc1_anchor369
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
-LOSS_ALPHA=0.1
+LOSS_ALPHA=1
 LR=0.0001
 WEIGHTED_BLOCK=0
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
