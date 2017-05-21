@@ -1,4 +1,4 @@
 git add . --all
-git commit -m "fix a bug on loss weight"
+git commit -m "fix the bug on label for loss"
 git push -u origin optm2
 
