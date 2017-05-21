@@ -535,19 +535,11 @@ def ssd_losses(logits, localisations,
         l_cross_pos = []
         l_cross_neg = []
         l_loc = []
-        l_cls = []
-        block_weights = get_block_weights(len(logits), loss_weighted_blocks);
-        logging.info("block weights: %s"%(str(block_weights)))
         for i in range(len(logits)):
             dtype = logits[i].dtype
             with tf.name_scope('block_%i' % i):
-                block_weight = block_weights[i]
                 # Determine weights Tensor.
-                #tf.summary.histogram('matching_score', gscores[i])
-                pmask = gscores[i] >= match_threshold
-                
-                
-                tf.summary.scalar('matched_anchor', tf.reduce_sum(tf.cast(pmask, tf.float32)))
+                pmask = gscores[i] > match_threshold
                 fpmask = tf.cast(pmask, dtype)
                 n_positives = tf.reduce_sum(fpmask)
 
@@ -556,24 +548,20 @@ def ssd_losses(logits, localisations,
                 # r_positive = n_positives / n_entries
                 # r_negative = negative_ratio * n_positives / (n_entries - n_positives)
 
-                # Negative mask. 
+                # Negative mask.
                 no_classes = tf.cast(pmask, tf.int32)
                 predictions = slim.softmax(logits[i])
-                nmask = tf.logical_not(pmask)
-
-#                nmask = tf.logical_and(tf.logical_not(pmask),
-#                                       gscores[i] > -0.5)
+                nmask = tf.logical_and(tf.logical_not(pmask),
+                                       gscores[i] > -0.5)
                 fnmask = tf.cast(nmask, dtype)
-                #nvalues stands for the confidence of negative samples being predicted as background. 
-                # The lower a value is, the harder the sample is. so, pick the lowest of nvalues, or highest of -nvalues.
-                nvalues = tf.where(nmask, # if negative, return score of being background; else, return 0
+                nvalues = tf.where(nmask,
                                    predictions[:, :, :, :, 0],
                                    1. - fnmask)
                 nvalues_flat = tf.reshape(nvalues, [-1])
                 # Number of negative entries to select.
                 n_neg = tf.cast(negative_ratio * n_positives, tf.int32)
-                n_neg = tf.maximum(n_neg, tf.size(nvalues_flat) // 8)# 8 is the length of a float variable.
-                n_neg = tf.maximum(n_neg, tf.shape(nvalues)[0] * 4) # h * 4, why?
+                n_neg = tf.maximum(n_neg, tf.size(nvalues_flat) // 8)
+                n_neg = tf.maximum(n_neg, tf.shape(nvalues)[0] * 4)
                 max_neg_entries = 1 + tf.cast(tf.reduce_sum(fnmask), tf.int32)
                 n_neg = tf.minimum(n_neg, max_neg_entries)
 
@@ -584,34 +572,22 @@ def ssd_losses(logits, localisations,
                 fnmask = tf.cast(nmask, dtype)
 
                 # Add cross-entropy loss.
-#                with tf.name_scope('cross_entropy_pos'):
-#                    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-#                                                                          labels=gclasses[i])
-#                    loss = tf.losses.compute_weighted_loss(loss, fpmask) #mean is calculated
-#                    l_cross_pos.append(loss)
-
-#                with tf.name_scope('cross_entropy_neg'):
-#                    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-#                                                                          labels=no_classes) # only obj/non-obj encoded in no_classes
-#                    loss = tf.losses.compute_weighted_loss(loss, fnmask)
-#                    l_cross_neg.append(loss)
-                loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i], labels=gclasses[i])
                 with tf.name_scope('cross_entropy_pos'):
-                    loss_pos = tf.losses.compute_weighted_loss(loss, 2.0 / (1 + alpha) * fpmask * block_weight) #* block_weight #mean is calculated
-                    l_cross_pos.append(loss_pos)
-                    
+                    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
+                                                                          labels=gclasses[i])
+                    loss = tf.losses.compute_weighted_loss(loss, fpmask)
+                    l_cross_pos.append(loss)
+
                 with tf.name_scope('cross_entropy_neg'):
-                    loss_neg = tf.losses.compute_weighted_loss(loss, 2.0 / (1 + alpha)* fnmask * block_weight) #* block_weight
-                    l_cross_neg.append(loss_neg)
-                    
-                with tf.name_scope('cls_loss'):
-                    cross = tf.add(loss_pos, loss_neg, name = 'cls')
-                    tf.summary.scalar('cls_loss', cross)
-                #loss = tf.losses.compute_weighted_loss(loss, fnmask + fnmask)
+                    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
+                                                                          labels=no_classes)
+                    loss = tf.losses.compute_weighted_loss(loss, fnmask)
+                    l_cross_neg.append(loss)
 
                 # Add localization loss: smooth L1, L2, ...
                 with tf.name_scope('localization'):
-                    weights = tf.expand_dims(alpha * 2.0 / (1 + alpha)* fpmask * block_weight, axis=-1)
+                    # Weights Tensor: positive mask + random negative.
+                    weights = tf.expand_dims(alpha * fpmask, axis=-1)
                     loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
                     loss = tf.losses.compute_weighted_loss(loss, weights)
                     l_loc.append(loss)
