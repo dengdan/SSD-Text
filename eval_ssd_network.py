@@ -100,7 +100,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_boolean(
     'wait_for_checkpoints', True, 'Wait for new checkpoints in the eval loop.')
 
-
+import logging
 FLAGS = tf.app.flags.FLAGS
 util.init_logger(log_file='eval.log', log_path = FLAGS.eval_dir, mode = 'a')
 
@@ -270,6 +270,7 @@ def main(_):
             mAP = tf.add_n(list(aps_voc07.values())) / len(aps_voc07)
             op = tf.summary.scalar(summary_name, mAP, collections=[])
             op = tf.Print(op, [mAP], summary_name)
+            logging.info("%s:%f"%(summary_name, mAP))
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
             # Mean average precision VOC12.
@@ -277,6 +278,7 @@ def main(_):
             mAP = tf.add_n(list(aps_voc12.values())) / len(aps_voc12)
             op = tf.summary.scalar(summary_name, mAP, collections=[])
             op = tf.Print(op, [mAP], summary_name)
+            logging.info("%s:%f"%(summary_name, mAP))
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
 
@@ -331,7 +333,7 @@ def main(_):
                 num_evals=num_batches,
                 eval_op=list(names_to_updates.values()),
                 variables_to_restore=variables_to_restore,
-                eval_interval_secs=300,
+                eval_interval_secs=60,
                 max_number_of_evaluations=np.inf,
                 session_config=config,
                 timeout=None)

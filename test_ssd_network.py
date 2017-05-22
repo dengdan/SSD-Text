@@ -45,9 +45,7 @@ tf.app.flags.DEFINE_float(
     'keep_threshold', 0.0, 'Keep detected objects with confidence not less than it')
     
 tf.app.flags.DEFINE_float(
-    'nms_threshold', 0.1, 'Non-Maximum Selection threshold.')
-tf.app.flags.DEFINE_float(
-    'matching_threshold', 0.9, 'Matching threshold with groundtruth objects.')
+    'nms_threshold', 0.5, 'Non-Maximum Selection threshold.')
 tf.app.flags.DEFINE_integer(
     'eval_resize', 4, 'Image resizing: None / CENTRAL_CROP / PAD_AND_RESIZE / WARP_RESIZE.')
 tf.app.flags.DEFINE_integer(
@@ -93,7 +91,7 @@ tf.app.flags.DEFINE_float(
     'The decay to use for the moving average.'
     'If left as None, then moving averages are not used.')
 tf.app.flags.DEFINE_float(
-    'gpu_memory_fraction', 0.1, 'GPU memory fraction to use.')
+    'gpu_memory_fraction', 0.3, 'GPU memory fraction to use.')
 tf.app.flags.DEFINE_boolean(
     'wait_for_checkpoints', True, 'Wait for new checkpoints in the eval loop.')
 
@@ -228,7 +226,7 @@ def test():
           return image_data
         
           
-        with tf.Session() as sess:
+        with tf.Session(config = config) as sess:
             step = saver.restore(sess, ckpt_path)
             import datasets.icdar2013_data
             data_provider = datasets.icdar2013_data.ICDAR2013Data(root_dir = FLAGS.dataset_dir, split = FLAGS.dataset_split_name)
