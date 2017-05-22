@@ -1,4 +1,4 @@
 git add . --all
-git commit -m "create inc1_anchor369"
+git commit -m "loc loss fixed to origin; add batch_size summary"
 git push -u origin inc1_anchor369
 

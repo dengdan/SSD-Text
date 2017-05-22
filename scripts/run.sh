@@ -54,7 +54,7 @@ case $ACTION in
             --loss_alpha=${LOSS_ALPHA} \
             --learning_rate=${LR} \
             --loss_weighted_blocks=${WEIGHTED_BLOCK} \
-            --max_number_of_steps=50000
+            --max_number_of_steps=100000
     ;;
     train)
         DATASET=$HOME/dataset/SSD-tf/ICDAR
@@ -83,7 +83,7 @@ case $ACTION in
         CKPT_PATH=$TRAIN_DIR
         MODEL_NAME=ssd_${SIZE}_vgg
         EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
-        CUDA_VISIBLE_DEVICES=
+        #CUDA_VISIBLE_DEVICES=
         DATASET=$HOME/dataset/SSD-tf/ICDAR
         python eval_ssd_network.py \
             --dataset_dir=$DATASET \
@@ -95,7 +95,7 @@ case $ACTION in
     ;;
     test)
         #EVAL_DIR=$HOME/temp_nfs/ssd_results/
-	CUDA_VISIBLE_DEVICES=
+	    #CUDA_VISIBLE_DEVICES=
         CKPT_PATH=$4
         if [ $5 ]
         then

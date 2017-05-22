@@ -288,13 +288,14 @@ def main(_):
         # =================================================================== #
         # Define the model running on every GPU.
         # =================================================================== #
+        t_batch_size = batch_size;
         def clone_fn(batch_queue):
             """Allows data parallelism by creating multiple
             clones of network_fn."""
             # Dequeue batch.
             b_image, b_gclasses, b_glocalisations, b_gscores = \
                 tf_utils.reshape_list(batch_queue.dequeue(), batch_shape)
-            
+            t_batch_size = tf.shape(b_image)[0] * num_clones
             # Construct SSD network.
             arg_scope = ssd_net.arg_scope(weight_decay=FLAGS.weight_decay,
                                           data_format=DATA_FORMAT)
@@ -311,6 +312,7 @@ def main(_):
                            loss_weighted_blocks = FLAGS.loss_weighted_blocks)
             return end_points
 
+        tf.summary.scalar('batch_size', t_batch_size)
         # Gather initial summaries.
         summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
 
