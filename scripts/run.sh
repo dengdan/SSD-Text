@@ -5,7 +5,7 @@ ACTION=$2
 
 SIZE=512
 HOME=/home/dengdan
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/inc1_anchor369
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/test-loss-no-use
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
