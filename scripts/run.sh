@@ -9,7 +9,7 @@ TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/inc1_anchor369
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
-LOSS_ALPHA=1
+LOSS_ALPHA=20
 LR=0.0001
 WEIGHTED_BLOCK=0
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
@@ -54,7 +54,7 @@ case $ACTION in
             --loss_alpha=${LOSS_ALPHA} \
             --learning_rate=${LR} \
             --loss_weighted_blocks=${WEIGHTED_BLOCK} \
-            --max_number_of_steps=100000
+            --max_number_of_steps=200000
     ;;
     train)
         DATASET=$HOME/dataset/SSD-tf/ICDAR
@@ -76,7 +76,7 @@ case $ACTION in
             --learning_rate=${LR} \
             --loss_alpha=${LOSS_ALPHA} \
             --loss_weighted_blocks=${WEIGHTED_BLOCK} \
-            --max_number_of_steps=100000
+            --max_number_of_steps=200000
     ;;
     eval)
         #TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config
@@ -110,8 +110,8 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --keep_top_k=1000 \
             --wait_for_checkpoints=${wait_for_checkpoints} \
-            --keep_threshold=0.001 \
-            --nms_threshold=0.6
+            --keep_threshold=0.5 \
+            --nms_threshold=0.3
     ;;
 esac
 
