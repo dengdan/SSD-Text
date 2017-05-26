@@ -270,7 +270,6 @@ def main(_):
             mAP = tf.add_n(list(aps_voc07.values())) / len(aps_voc07)
             op = tf.summary.scalar(summary_name, mAP, collections=[])
             op = tf.Print(op, [mAP], summary_name)
-            logging.info("%s:%f"%(summary_name, mAP))
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
             # Mean average precision VOC12.
@@ -278,7 +277,6 @@ def main(_):
             mAP = tf.add_n(list(aps_voc12.values())) / len(aps_voc12)
             op = tf.summary.scalar(summary_name, mAP, collections=[])
             op = tf.Print(op, [mAP], summary_name)
-            logging.info("%s:%f"%(summary_name, mAP))
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
 

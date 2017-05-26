@@ -54,7 +54,7 @@ class ICDAR2013Data(object):
                 x1, y1, x2, y2  = box;
                 box = [y1 / h, x1 / w, y2 / h,  x2 / w];
                 bbox_gt.append(box);
-                aspect_ratios.append((x2 - x1)*1.0/(y2 - y1))
+                aspect_ratios.append(((x2 - x1)*1.0 / w )/((y2 - y1)*1.0 / h))
                 heights_rel.append((y2 - y1) * 1.0 / h)
                 heights_abs.append((y2 - y1) * 1.0 / h * 512)
                 #print y2 - y1, h, (y2 - y1) * 1.0 / h
@@ -160,5 +160,5 @@ def aspect_ratio_cal(split,k):
         
 if __name__ == "__main__":
     #aspect_ratio_cal('test', 3);
-    aspect_ratio_cal('test', 3);
+    aspect_ratio_cal('train', 3);
     

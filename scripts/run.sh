@@ -4,12 +4,11 @@ export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 
 SIZE=512
-HOME=/home/dengdan
 TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/inc1_anchor369
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
-LOSS_ALPHA=20
+LOSS_ALPHA=40
 LR=0.0001
 WEIGHTED_BLOCK=0
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
@@ -76,7 +75,7 @@ case $ACTION in
             --learning_rate=${LR} \
             --loss_alpha=${LOSS_ALPHA} \
             --loss_weighted_blocks=${WEIGHTED_BLOCK} \
-            --max_number_of_steps=200000
+            --max_number_of_steps=300000
     ;;
     eval)
         #TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/SynthText-pretrain-cnt/origin-config

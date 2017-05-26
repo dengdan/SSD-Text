@@ -504,13 +504,6 @@ def ssd_arg_scope_caffe(caffe_scope):
 # =========================================================================== #
 # SSD loss function.
 # =========================================================================== #
-def get_block_weights(n_blocks, use_weights = False):
-    if use_weights:
-        weights = np.asarray([0.7, 0.1] + [0.2 / (n_blocks - 2)] * (n_blocks - 2)) * n_blocks
-    else:
-        weights = np.asarray([1.0] * n_blocks)
-    return weights;
-    
     
 def ssd_losses(logits, localisations,
                gclasses, glocalisations, gscores,
@@ -536,12 +529,9 @@ def ssd_losses(logits, localisations,
         l_cross_neg = []
         l_loc = []
         l_cls = []
-        block_weights = get_block_weights(len(logits), loss_weighted_blocks);
-        logging.info("block weights: %s"%(str(block_weights)))
         for i in range(len(logits)):
             dtype = logits[i].dtype
             with tf.name_scope('block_%i' % i):
-                block_weight = block_weights[i]
                 # Determine weights Tensor.
                 #tf.summary.histogram('matching_score', gscores[i])
                 pmask = gscores[i] >= match_threshold
