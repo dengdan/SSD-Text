@@ -186,7 +186,7 @@ def main(_):
             predictions, localisations, logits, end_points = \
                 ssd_net.net(b_image, is_training=False)
         # Add losses functions.
-        ssd_net.losses(logits, localisations,
+        ssd_net.losses(logits, predictions,localisations,
                        b_gclasses, b_glocalisations, b_gscores)
 
         # Performing post-processing on CPU: loop-intensive, usually more efficient.

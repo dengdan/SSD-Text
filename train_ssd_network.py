@@ -260,15 +260,13 @@ def main(_):
                                                              'object/bbox'])
             image = tf.identity(image, 'input_image')
             # Pre-processing image, labels and bboxes.
-            image, glabels, gbboxes = \
-                image_preprocessing_fn(image, glabels, gbboxes,
+            image, glabels, gbboxes = image_preprocessing_fn(image, glabels, gbboxes,
                                        out_shape=ssd_shape,
                                        data_format=DATA_FORMAT)
             image = tf.identity(image, 'processed_image')
             
             # Encode groundtruth labels and bboxes.
-            gclasses, glocalisations, gscores = \
-                ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
+            gclasses, glocalisations, gscores = ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
             batch_shape = [1] + [len(ssd_anchors)] * 3
             # Training batches and queue.
             r = tf.train.batch(
@@ -276,8 +274,7 @@ def main(_):
                 batch_size = batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
-            b_image, b_gclasses, b_glocalisations, b_gscores = \
-                tf_utils.reshape_list(r, batch_shape)
+            b_image, b_gclasses, b_glocalisations, b_gscores = tf_utils.reshape_list(r, batch_shape)
 
             # Intermediate queueing: unique batch computation pipeline for all
             # GPUs running the training.
@@ -300,19 +297,18 @@ def main(_):
             arg_scope = ssd_net.arg_scope(weight_decay=FLAGS.weight_decay,
                                           data_format=DATA_FORMAT)
             with slim.arg_scope(arg_scope):
-                predictions, localisations, logits, end_points = \
-                    ssd_net.net(b_image, is_training=True) # predictions is the softmax result, can used in HNM when training
+                confidences, localisations, logits, end_points = ssd_net.net(b_image, is_training=True) 
             # Add loss function.
-            ssd_net.losses(logits, localisations,
+            ssd_net.losses(confidences, logits, localisations,
                            b_gclasses, b_glocalisations, b_gscores,
                            match_threshold=FLAGS.match_threshold,
                            negative_ratio=FLAGS.negative_ratio,
                            alpha=FLAGS.loss_alpha,
-                           label_smoothing=FLAGS.label_smoothing,
-                           loss_weighted_blocks = FLAGS.loss_weighted_blocks)
+                           label_smoothing=FLAGS.label_smoothing)
             return end_points
 
-        tf.summary.scalar('batch_size', t_batch_size)
+        tf.summary.scalar('batch_size_per_gpu', t_batch_size)
+        tf.summary.scalar('batch_size', t_batch_size * num_clones)
         # Gather initial summaries.
         summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
 

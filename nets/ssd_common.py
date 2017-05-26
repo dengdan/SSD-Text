@@ -108,11 +108,7 @@ def tf_ssd_bboxes_encode_layer(labels,
         label = labels[i]
         bbox = bboxes[i]
         jaccard = jaccard_with_anchors(bbox)
-        # Mask: check threshold + scores + no annotations + num_classes.
         mask = tf.greater(jaccard, feat_scores) # the values in feat_scores denotes the currently max iou.
-        # mask = tf.logical_and(mask, tf.greater(jaccard, matching_threshold))
-#        mask = tf.logical_and(mask, feat_scores > -0.5) # no use
-#        mask = tf.logical_and(mask, label < num_classes) #can be ignored if all gt labels are within 0 and 1.
         imask = tf.cast(mask, tf.int64)
         fmask = tf.cast(mask, dtype)
         # Update values using mask.
@@ -124,12 +120,6 @@ def tf_ssd_bboxes_encode_layer(labels,
         feat_ymax = fmask * bbox[2] + (1 - fmask) * feat_ymax
         feat_xmax = fmask * bbox[3] + (1 - fmask) * feat_xmax
 
-        # Check no annotation label: ignore these anchors...
-        # interscts = intersection_with_anchors(bbox)
-        # mask = tf.logical_and(interscts > ignore_threshold,
-        #                       label == no_annotation_label)
-        # # Replace scores by -1.
-        # feat_scores = tf.where(mask, -tf.cast(mask, dtype), feat_scores)
 
         return [i+1, feat_labels, feat_scores,
                 feat_ymin, feat_xmin, feat_ymax, feat_xmax]
@@ -185,8 +175,7 @@ def tf_ssd_bboxes_encode(labels,
         target_scores = []
         for i, anchors_layer in enumerate(anchors):
             with tf.name_scope('bboxes_encode_block_%i' % i):
-                t_labels, t_loc, t_scores = \
-                    tf_ssd_bboxes_encode_layer(labels, bboxes, anchors_layer,
+                t_labels, t_loc, t_scores = tf_ssd_bboxes_encode_layer(labels, bboxes, anchors_layer,
                                                num_classes, no_annotation_label,
                                                ignore_threshold,
                                                prior_scaling, dtype)

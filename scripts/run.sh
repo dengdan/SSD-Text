@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/inc1_anchor369
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/inc1_anchor369-debug
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
