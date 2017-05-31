@@ -620,9 +620,14 @@ def ssd_losses(confidences, logits, localisations,
                 
             weight = tf.cond(n_pos > 0, has_pos, no_pos)
             cls_weight.append(weight)
-            
+        
         cls_weight = tf.stack(cls_weight)
-        tf.summary.scalar('num_instances', tf.reduce_sum(cls_weight) / tf.cast(tf.reduce_prod(tf.shape(cls_weight)), dtype))
+        float_pos_mask = tf.cast(pos_mask, dtype)
+        tf.summary.histogram('negative iou', (cls_weight - float_pos_mask) * all_gscores)
+        
+        tf.summary.scalar('percent_instances', tf.reduce_sum(cls_weight) / tf.cast(tf.reduce_prod(tf.shape(cls_weight)), dtype))
+        tf.summary.scalar('number_of_instances', tf.reduce_sum(cls_weight))
+
         # Add cross-entropy loss.
         with tf.name_scope('cross_entropy'):
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = all_logits, labels = all_gclasses)

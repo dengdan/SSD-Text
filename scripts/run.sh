@@ -4,12 +4,12 @@ export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/inc1_anchor369-debug
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/negative-mining
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
 LOSS_ALPHA=40
-LR=0.0001
+LR=0.00001
 WEIGHTED_BLOCK=0
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
