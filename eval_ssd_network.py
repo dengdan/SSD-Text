@@ -162,20 +162,16 @@ def main(_):
                                        difficults=None)
 
             # Encode groundtruth labels and bboxes.
-            gclasses, glocalisations, gscores = \
+            gclasses, glocalizations, gscores = \
                 ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
-            batch_shape = [1] * 5 + [len(ssd_anchors)] * 3
 
             # Evaluation batch.
-            r = tf.train.batch(
-                tf_utils.reshape_list([image, glabels, gbboxes, gdifficults, gbbox_img,
-                                       gclasses, glocalisations, gscores]),
+            b_image, b_glabels, b_gbboxes, b_gdifficults, b_gbbox_img, b_gclasses, b_glocalizations, b_gscores = tf.train.batch(
+                [image, glabels, gbboxes, gdifficults, gbbox_img, gclasses, glocalizations, gscores],
                 batch_size=FLAGS.batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size,
                 dynamic_pad=True)
-            (b_image, b_glabels, b_gbboxes, b_gdifficults, b_gbbox_img, b_gclasses,
-             b_glocalisations, b_gscores) = tf_utils.reshape_list(r, batch_shape)
 
         # =================================================================== #
         # SSD Network + Ouputs decoding.
@@ -183,26 +179,24 @@ def main(_):
         dict_metrics = {}
         arg_scope = ssd_net.arg_scope(data_format=DATA_FORMAT)
         with slim.arg_scope(arg_scope):
-            predictions, localisations, logits, end_points = \
+            predictions, localizations, logits, end_points = \
                 ssd_net.net(b_image, is_training=False)
         # Add losses functions.
-        ssd_net.losses(logits, predictions,localisations,
-                       b_gclasses, b_glocalisations, b_gscores)
+        ssd_net.losses(logits, predictions,localizations,
+                       b_gclasses, b_glocalizations, b_gscores)
 
         # Performing post-processing on CPU: loop-intensive, usually more efficient.
         with tf.device('/device:CPU:0'):
             # Detected objects from SSD output.
-            localisations = ssd_net.bboxes_decode(localisations, ssd_anchors)
-            rscores, rbboxes = \
-                ssd_net.detected_bboxes(predictions, localisations,
+            localizations = ssd_net.bboxes_decode(localizations, ssd_anchors)
+            rscores, rbboxes = ssd_net.detected_bboxes(predictions, localizations,
                                         select_threshold=FLAGS.select_threshold,
                                         nms_threshold=FLAGS.nms_threshold,
                                         clipping_bbox=None,
                                         top_k=FLAGS.select_top_k,
                                         keep_top_k=FLAGS.keep_top_k)
             # Compute TP and FP statistics.
-            num_gbboxes, tp, fp, rscores = \
-                tfe.bboxes_matching_batch(rscores.keys(), rscores, rbboxes,
+            num_gbboxes, tp, fp, rscores = tfe.bboxes_matching_batch(rscores.keys(), rscores, rbboxes,
                                           b_glabels, b_gbboxes, b_gdifficults,
                                           matching_threshold=FLAGS.matching_threshold)
 

@@ -123,10 +123,6 @@ class SSDNet(object):
                     prediction_fn=prediction_fn,
                     reuse=reuse,
                     scope=scope)
-        # Update feature shapes (try at least!)
-        if update_feat_shapes:
-            shapes = ssd_feat_shapes_from_net(r[0], self.params.feat_shapes)
-            self.params = self.params._replace(feat_shapes=shapes)
         return r
 
     def arg_scope(self, weight_decay=0.0005, data_format='NHWC'):
@@ -172,18 +168,16 @@ class SSDNet(object):
             prior_scaling=self.params.prior_scaling,
             scope=scope)
 
-    def detected_bboxes(self, predictions, localisations,
+    def detected_bboxes(self, predictions, localizations,
                         select_threshold=None, nms_threshold=0.5,
                         clipping_bbox=None, top_k=400, keep_top_k=200):
         """Get the detected bounding boxes from the SSD network output.
         """
         # Select top_k bboxes from predictions, and clip
-        rscores, rbboxes = \
-            ssd_common.tf_ssd_bboxes_select(predictions, localisations,
+        rscores, rbboxes = ssd_common.tf_ssd_bboxes_select(predictions, localizations,
                                             select_threshold=select_threshold,
                                             num_classes=self.params.num_classes)
-        rscores, rbboxes = \
-            tfe.bboxes_sort(rscores, rbboxes, top_k=top_k)
+        rscores, rbboxes = tfe.bboxes_sort(rscores, rbboxes, top_k=top_k)
         # Apply NMS algorithm.
         rscores, rbboxes = \
             tfe.bboxes_nms_batch(rscores, rbboxes,
@@ -193,8 +187,8 @@ class SSDNet(object):
         #     rbboxes = tfe.bboxes_clip(clipping_bbox, rbboxes)
         return rscores, rbboxes
 
-    def losses(self, confidences, logits, localisations,
-               gclasses, glocalisations, gscores,
+    def losses(self, confidences, logits, localizations,
+               gclasses, glocalizations, gscores,
                match_threshold=0.5,
                negative_ratio=3.,
                alpha=1.,
@@ -202,8 +196,8 @@ class SSDNet(object):
                scope='ssd_losses'):
         """Define the SSD network losses.
         """
-        return ssd_losses(confidences, logits, localisations,
-                          gclasses, glocalisations, gscores,
+        return ssd_losses(confidences, logits, localizations,
+                          gclasses, glocalizations, gscores,
                           match_threshold=match_threshold,
                           negative_ratio=negative_ratio,
                           alpha=alpha,
@@ -309,14 +303,15 @@ def ssd_anchor_one_layer(img_shape,
     x = (x.astype(dtype) + offset) * step / img_shape[1]
 
     # Expand dims to support easy broadcasting.
-    y = np.expand_dims(y, axis=-1)
-    x = np.expand_dims(x, axis=-1)
-
+#    y = np.expand_dims(y, axis=-1)
+#    x = np.expand_dims(x, axis=-1)
+    x = np.ravel(x)
+    y = np.ravel(y)
     # Compute relative height and width.
     # Tries to follow the original implementation of SSD for the order.
     num_anchors = len(sizes) + len(ratios)
-    h = np.zeros((num_anchors, ), dtype=dtype)
-    w = np.zeros((num_anchors, ), dtype=dtype)
+    h = [0] * num_anchors
+    w = [0] * num_anchors
     # Add first anchor boxes with ratio=1.
     h[0] = sizes[0] / img_shape[0]
     w[0] = sizes[0] / img_shape[1]
@@ -328,7 +323,23 @@ def ssd_anchor_one_layer(img_shape,
     for i, r in enumerate(ratios):
         h[i+di] = sizes[0] / img_shape[0] / math.sqrt(r)
         w[i+di] = sizes[0] / img_shape[1] * math.sqrt(r)
-    return y, x, h, w
+        
+    
+    all_xs = []
+    all_ys = []
+    all_heights = []
+    all_widths = []
+    anchors_per_as = feat_shape[0] * feat_shape[1] # anchors per aspect ratio
+    for di in xrange(num_anchors):
+        all_xs.extend(x.copy())
+        all_ys.extend(y.copy())
+        anchor_width, anchor_height = w[di], h[di]
+        all_heights.extend([anchor_height] * anchors_per_as)
+        all_widths.extend([anchor_width] * anchors_per_as)
+    
+    anchors = np.vstack([all_xs, all_ys, all_widths, all_heights])
+    anchors = np.transpose(anchors)        
+    return anchors
 
 
 def ssd_anchors_all_layers(img_shape,
@@ -348,7 +359,9 @@ def ssd_anchors_all_layers(img_shape,
                                              anchor_steps[i],
                                              offset=offset, dtype=dtype)
         layers_anchors.append(anchor_bboxes)
-    return layers_anchors
+
+    all_anchors = np.vstack(layers_anchors)
+    return all_anchors
 def tensor_shape(x, rank=3):
     """Returns the dimensions of a tensor.
     Args:
@@ -377,13 +390,14 @@ def ssd_multibox_layer(inputs,
         net = tf.nn.l2_normalize(net, -1) * normalization
     # Number of anchors.
     num_anchors = len(sizes) + len(ratios)
-
+    batch_size = tensor_shape(inputs, 4)[0]
     # Location.
     num_loc_pred = num_anchors * 4
     loc_pred = slim.conv2d(net, num_loc_pred, [3, 3], activation_fn=None,
                            scope='conv_loc')
     loc_pred = custom_layers.channel_to_last(loc_pred)
     loc_pred = tf.reshape(loc_pred, tensor_shape(loc_pred, 4)[:-1]+[num_anchors, 4]) # reshaped to (batch_size, h, w, num_anchors, 4)
+    
     # Class prediction.
     num_cls_pred = num_anchors * num_classes
     cls_pred = slim.conv2d(net, num_cls_pred, [3, 3], activation_fn=None, scope='conv_cls')
@@ -473,13 +487,13 @@ def ssd_net(inputs,
             # pad_shape = [(i-j) for i, j in zip(layer_shape(net), [0, 1, 1, 0])]
             # net = tf.slice(net, [0, 0, 0, 0], pad_shape, name='caffe_pad')
         end_points[end_point] = net
-        # Prediction and localisations layers.
+        # Prediction and localizations layers.
         predictions = []
         logits = []
-        localisations = []
+        localizations = []
         for i, layer in enumerate(feat_layers):
             with tf.variable_scope(layer + '_box'):
-                p, l = ssd_vgg_300.ssd_multibox_layer(end_points[layer],
+                p, l = ssd_multibox_layer(end_points[layer],
                                                       num_classes,
                                                       anchor_sizes[i],
                                                       anchor_ratios[i],
@@ -487,10 +501,12 @@ def ssd_net(inputs,
             
             predictions.append(prediction_fn(p))
             logits.append(p)
-            localisations.append(l)
+            localizations.append(l)
         
-        
-        return predictions, localisations, logits, end_points
+        all_predictions = reshape_and_concat(predictions)
+        all_logits = reshape_and_concat(logits)
+        all_localizations = reshape_and_concat(localizations)
+        return all_predictions, all_localizations, all_logits, end_points
 ssd_net.default_image_size = 512
 
 
@@ -549,18 +565,19 @@ def ssd_arg_scope_caffe(caffe_scope):
 
 def reshape_and_concat(tensors):
     def get_shape(tensor):
-        if len(tensor.shape) == 4:
-            shape = (tf.shape(tensor)[0], -1);
-        else:
+        if len(tensor.shape) == 5:
             shape = (tf.shape(tensor)[0], -1, tf.shape(tensor)[-1])
+        else:
+            raise ValueError, "invalid input shape:" + str(tensor.shape)
         return shape
         
     tensors_reshaped = [tf.reshape(tensor, get_shape(tensor)) for tensor in tensors]
     all_tensors = tf.concat(tensors_reshaped, axis = 1)
+    
     return all_tensors
     
-def ssd_losses(confidences, logits, localisations,
-               gclasses, glocalisations, gscores,
+def ssd_losses(confidences, logits, localizations,
+               gclasses, glocalizations, gscores,
                match_threshold=0.5,
                negative_ratio=3.,
                alpha=1.,
@@ -573,35 +590,28 @@ def ssd_losses(confidences, logits, localisations,
 
     Arguments:
       confi: (list of) predictions logits Tensors;
-      localisations: (list of) localisations Tensors;
+      localizations: (list of) localizations Tensors;
       gclasses: (list of) groundtruth labels Tensors;
-      glocalisations: (list of) groundtruth localisations Tensors;
+      glocalizations: (list of) groundtruth localizations Tensors;
       gscores: (list of) groundtruth score Tensors;
     """
     with tf.name_scope(scope, 'ssd_losses'):
         dtype = logits[0].dtype
-        all_confidences = reshape_and_concat(confidences)
-        all_localisations = reshape_and_concat(localisations)
-        all_logits = reshape_and_concat(logits)
-        
-        all_gclasses = reshape_and_concat(gclasses)
-        all_gscores = reshape_and_concat(gscores)
-        all_glocalisations = reshape_and_concat(glocalisations)
-    
-        pos_mask = all_gscores >= match_threshold
+
+        pos_mask = gscores >= match_threshold
         
         no_classes = tf.cast(pos_mask, tf.int32)
         neg_mask = tf.logical_not(pos_mask)
         # if negative, return score of being background; else, return 0
-        nvalues = tf.where(neg_mask, all_confidences[:, :, 0], 1. - tf.cast(neg_mask, dtype))
+        nvalues = tf.where(neg_mask, confidences[:, :, 1], 1. - tf.cast(neg_mask, dtype))
         
-        cls_weight = []# 2d, batch_size * num_predictions
+        cls_weight = []# the weight or mask for cls loss, being 2d, batch_size * num_predictions
 
-        batch_size = tensor_shape(logits[0])[0]
+        batch_size = tensor_shape(gscores)[0]
         for img_idx in xrange(batch_size):
-            img_neg_conf = nvalues[img_idx]
-            img_pos_mask = pos_mask[img_idx]
-            img_neg_mask = neg_mask[img_idx]
+            img_neg_conf = nvalues[img_idx, :]
+            img_pos_mask = pos_mask[img_idx, :]
+            img_neg_mask = neg_mask[img_idx, :]
             img_float_pos_mask = tf.cast(img_pos_mask, dtype)
             img_float_neg_mask = tf.cast(img_neg_mask, dtype)
             n_pos = tf.reduce_sum(img_float_pos_mask)
@@ -625,111 +635,18 @@ def ssd_losses(confidences, logits, localisations,
         
         cls_weight = tf.stack(cls_weight)
         float_pos_mask = tf.cast(pos_mask, dtype)
-        tf.summary.histogram('negative iou', (cls_weight - float_pos_mask) * all_gscores)
-        
+        tf.summary.histogram('negative_iou', (cls_weight - float_pos_mask) * gscores)
+        tf.summary.scalar('negative_postive_ratio', tf.reduce_sum((cls_weight - float_pos_mask)) / tf.reduce_sum(float_pos_mask))
         tf.summary.scalar('percent_instances', tf.reduce_sum(cls_weight) / tf.cast(tf.reduce_prod(tf.shape(cls_weight)), dtype))
         tf.summary.scalar('number_of_instances', tf.reduce_sum(cls_weight))
-
+        tf.summary.scalar('match_threshold', match_threshold)
         # Add cross-entropy loss.
         with tf.name_scope('cross_entropy'):
-            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = all_logits, labels = all_gclasses)
+            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = gclasses)
             loss = tf.losses.compute_weighted_loss(loss, cls_weight)
           
         with tf.name_scope('localization'):
             weights = tf.expand_dims(alpha * tf.cast(pos_mask, dtype), axis=-1)
-            loss = custom_layers.abs_smooth(all_localisations - all_glocalisations)
+            loss = custom_layers.abs_smooth(localizations - glocalizations)
             loss = tf.losses.compute_weighted_loss(loss, weights)
-            
-def ssd_losses_origin(confidences, logits, localisations,
-               gclasses, glocalisations, gscores,
-               match_threshold=0.5,
-               negative_ratio=3.,
-               alpha=1.,
-               label_smoothing=0.,
-               scope=None):
-    """Loss functions for training the SSD 300 VGG network.
-
-    This function defines the different loss components of the SSD, and
-    adds them to the TF loss collection.
-
-    Arguments:
-      logits: (list of) predictions logits Tensors;
-      localisations: (list of) localisations Tensors;
-      gclasses: (list of) groundtruth labels Tensors;
-      glocalisations: (list of) groundtruth localisations Tensors;
-      gscores: (list of) groundtruth score Tensors;
-    """
-    with tf.name_scope(scope, 'ssd_losses'):
-        l_cross_pos = []
-        l_cross_neg = []
-        l_loc = []
-        for i in range(len(logits)):
-            dtype = logits[i].dtype
-            with tf.name_scope('block_%i' % i):
-                # Determine weights Tensor.
-                pmask = gscores[i] > match_threshold
-                fpmask = tf.cast(pmask, dtype)
-                n_positives = tf.reduce_sum(fpmask)
-
-                # Select some random negative entries.
-                # n_entries = np.prod(gclasses[i].get_shape().as_list())
-                # r_positive = n_positives / n_entries
-                # r_negative = negative_ratio * n_positives / (n_entries - n_positives)
-
-                # Negative mask.
-                no_classes = tf.cast(pmask, tf.int32)
-                predictions = slim.softmax(logits[i])
-                nmask = tf.logical_and(tf.logical_not(pmask),
-                                       gscores[i] > -0.5)
-                fnmask = tf.cast(nmask, dtype)
-                nvalues = tf.where(nmask,
-                                   predictions[:, :, :, :, 0],
-                                   1. - fnmask)
-                nvalues_flat = tf.reshape(nvalues, [-1])
-                # Number of negative entries to select.
-                n_neg = tf.cast(negative_ratio * n_positives, tf.int32)
-                n_neg = tf.maximum(n_neg, tf.size(nvalues_flat) // 8)
-                n_neg = tf.maximum(n_neg, tf.shape(nvalues)[0] * 4)
-                max_neg_entries = tf.cast(tf.reduce_sum(fnmask), tf.int32)
-                n_neg = tf.minimum(n_neg, max_neg_entries)
-#                n_neg = tf.Print(n_neg, [tf.shape(nvalues_flat), n_neg, n_positives])
-                val, idxes = tf.nn.top_k(-nvalues_flat, k=n_neg)
-                minval = val[-1]
-                # Final negative mask.
-                nmask = tf.logical_and(nmask, -nvalues > minval)
-                fnmask = tf.cast(nmask, dtype)
-
-                # Add cross-entropy loss.
-                with tf.name_scope('cross_entropy_pos'):
-                    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-                                                                          labels=gclasses[i])
-                    loss = tf.losses.compute_weighted_loss(loss, fpmask)
-                    l_cross_pos.append(loss)
-
-                with tf.name_scope('cross_entropy_neg'):
-                    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-                                                                          labels=no_classes)
-                    loss = tf.losses.compute_weighted_loss(loss, fnmask)
-                    l_cross_neg.append(loss)
-
-                # Add localization loss: smooth L1, L2, ...
-                with tf.name_scope('localization'):
-                    # Weights Tensor: positive mask + random negative.
-                    weights = tf.expand_dims(alpha * fpmask, axis=-1)
-                    loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
-                    loss = tf.losses.compute_weighted_loss(loss, weights)
-                    l_loc.append(loss)
-
-        # Additional total losses...
-        with tf.name_scope('total'):
-            total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
-            total_cross_neg = tf.add_n(l_cross_neg, 'cross_entropy_neg')
-            total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
-            total_loc = tf.add_n(l_loc, 'localization')
-
-            # Add to EXTRA LOSSES TF.collection
-            tf.add_to_collection('EXTRA_LOSSES', total_cross_pos)
-            tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
-            tf.add_to_collection('EXTRA_LOSSES', total_cross)
-            tf.add_to_collection('EXTRA_LOSSES', total_loc)
 

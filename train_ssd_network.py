@@ -264,22 +264,22 @@ def main(_):
                                        out_shape=ssd_shape,
                                        data_format=DATA_FORMAT)
             image = tf.identity(image, 'processed_image')
-            
             # Encode groundtruth labels and bboxes.
-            gclasses, glocalisations, gscores = ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
+            gclasses, glocalizations, gscores = ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
             batch_shape = [1] + [len(ssd_anchors)] * 3
             # Training batches and queue.
+#                tf_utils.reshape_list([image, gclasses, glocalizations, gscores]),
             r = tf.train.batch(
-                tf_utils.reshape_list([image, gclasses, glocalisations, gscores]),
+                [image, gclasses, glocalizations, gscores],
                 batch_size = batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
-            b_image, b_gclasses, b_glocalisations, b_gscores = tf_utils.reshape_list(r, batch_shape)
+            b_image, b_gclasses, b_glocalizations, b_gscores = tf_utils.reshape_list(r, batch_shape)
 
             # Intermediate queueing: unique batch computation pipeline for all
             # GPUs running the training.
             batch_queue = slim.prefetch_queue.prefetch_queue(
-                tf_utils.reshape_list([b_image, b_gclasses, b_glocalisations, b_gscores]),
+                tf_utils.reshape_list([b_image, b_gclasses, b_glocalizations, b_gscores]),
                 capacity=2 * num_clones)
 
         # =================================================================== #
@@ -290,17 +290,21 @@ def main(_):
             """Allows data parallelism by creating multiple
             clones of network_fn."""
             # Dequeue batch.
-            b_image, b_gclasses, b_glocalisations, b_gscores = \
-                tf_utils.reshape_list(batch_queue.dequeue(), batch_shape)
+            #b_image, b_gclasses, b_glocalizations, b_gscores = tf_utils.reshape_list(batch_queue.dequeue(), batch_shape)
+            b_image, b_gclasses, b_glocalizations, b_gscores = batch_queue.dequeue()
             t_batch_size = tf.shape(b_image)[0] * num_clones
             # Construct SSD network.
             arg_scope = ssd_net.arg_scope(weight_decay=FLAGS.weight_decay,
                                           data_format=DATA_FORMAT)
             with slim.arg_scope(arg_scope):
-                confidences, localisations, logits, end_points = ssd_net.net(b_image, is_training=True) 
+                confidences, localizations, logits, end_points = ssd_net.net(b_image, is_training=True) 
             # Add loss function.
-            ssd_net.losses(confidences, logits, localisations,
-                           b_gclasses, b_glocalisations, b_gscores,
+            #confidences = tf.Print(confidences, ["shape of confidences(b, N, n_cls)", tf.shape(confidences)])
+            #b_gscores = tf.Print(b_gscores, ["shape of b_gscores:(b, N, 1)", tf.shape(b_gscores)])
+            #localizations = tf.Print(localizations, ["shape of localizations(b, N, 4)", tf.shape(localizations)])
+            #b_glocalizations = tf.Print(b_glocalizations, ["shape of b_glocalizations(b, N, 4)", tf.shape(b_glocalizations)])
+            ssd_net.losses(confidences, logits, localizations,
+                           b_gclasses, b_glocalizations, b_gscores,
                            match_threshold=FLAGS.match_threshold,
                            negative_ratio=FLAGS.negative_ratio,
                            alpha=FLAGS.loss_alpha,

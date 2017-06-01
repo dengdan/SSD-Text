@@ -4,12 +4,12 @@ export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/compare-with-caffe-onic13-negmining
+TRAIN_DIR=$HOME/models/ssd-tf/debug
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
 LOSS_ALPHA=1
-LR=0.0001
+LR=0.001
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3
