@@ -4,13 +4,12 @@ export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
 
 SIZE=512
-TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/negative-mining
+TRAIN_DIR=$HOME/temp/ssd-text-$SIZE/compare-with-caffe-onic13-negmining
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
-LOSS_ALPHA=40
-LR=0.00001
-WEIGHTED_BLOCK=0
+LOSS_ALPHA=1
+LR=0.0001
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3
@@ -38,7 +37,7 @@ case $ACTION in
         python train_ssd_network.py \
             --dataset_dir=$DATASET \
             --negative_ratio=3 \
-            --match_threshold=0.5 \
+            --match_threshold=0.25 \
             --train_dir=$TRAIN_DIR \
             --learning_rate_decay_type=fixed \
             --learning_rate=0.0001 \
@@ -47,13 +46,12 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
             --should_trace=0 \
-            --min_object_covered=0.95 \
+            --min_object_covered=0.25 \
             --min_width_covered=0.25 \
             --min_height_covered=0.8 \
             --loss_alpha=${LOSS_ALPHA} \
             --learning_rate=${LR} \
-            --loss_weighted_blocks=${WEIGHTED_BLOCK} \
-            --max_number_of_steps=200000
+            --max_number_of_steps=40000
     ;;
     train)
         DATASET=$HOME/dataset/SSD-tf/ICDAR
@@ -82,7 +80,7 @@ case $ACTION in
         CKPT_PATH=$TRAIN_DIR
         MODEL_NAME=ssd_${SIZE}_vgg
         EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
-        #CUDA_VISIBLE_DEVICES=
+       # CUDA_VISIBLE_DEVICES=
         DATASET=$HOME/dataset/SSD-tf/ICDAR
         python eval_ssd_network.py \
             --dataset_dir=$DATASET \
@@ -110,7 +108,7 @@ case $ACTION in
             --keep_top_k=1000 \
             --wait_for_checkpoints=${wait_for_checkpoints} \
             --keep_threshold=0.5 \
-            --nms_threshold=0.3
+            --nms_threshold=0.125
     ;;
 esac
 

@@ -109,6 +109,8 @@ def tf_ssd_bboxes_encode_layer(labels,
         bbox = bboxes[i]
         jaccard = jaccard_with_anchors(bbox)
         mask = tf.greater(jaccard, feat_scores) # the values in feat_scores denotes the currently max iou.
+        mask = tf.logical_and(mask, feat_scores > -0.5)
+        mask = tf.logical_and(mask, label < num_classes)
         imask = tf.cast(mask, tf.int64)
         fmask = tf.cast(mask, dtype)
         # Update values using mask.

@@ -42,8 +42,8 @@ _B_MEAN = 104.
 
 # Some training pre-processing parameters.
 BBOX_CROP_OVERLAP = 0.2         # Minimum overlap to keep a bbox after cropping.
-CROP_RATIO_RANGE = (0.6, 1.67)  # Distortion ratio during cropping.
-AREA_RANGE = (0.3, 1.0)
+CROP_RATIO_RANGE = (0.9, 1.1)  # Distortion ratio during cropping.
+AREA_RANGE = (0.1, 1.0)
 
 def tf_image_whitened(image, means=[_R_MEAN, _G_MEAN, _B_MEAN]):
     """Subtracts the given means from each image channel.
@@ -227,10 +227,10 @@ def distorted_bounding_box_crop(image,
 
         # Update bounding boxes: resize and filter out.
         bboxes = tfe.bboxes_resize(distort_bbox, bboxes)
-#        labels, bboxes = tfe.bboxes_filter_overlap(labels, bboxes,
-#                                                   threshold=BBOX_CROP_OVERLAP,
-#                                                   assign_negative=False)
-        labels, bboxes = tfe.bboxes_filter_height_width(labels, bboxes, width_threshold = FLAGS.min_width_covered, height_threshold = FLAGS.min_height_covered)       
+        labels, bboxes = tfe.bboxes_filter_overlap(labels, bboxes,
+                                                   threshold=BBOX_CROP_OVERLAP,
+                                                   assign_negative=False)
+        #labels, bboxes = tfe.bboxes_filter_height_width(labels, bboxes, width_threshold = FLAGS.min_width_covered, height_threshold = FLAGS.min_height_covered)       
         return cropped_image, labels, bboxes, distort_bbox
 
 
@@ -284,7 +284,7 @@ def preprocess_for_train(image, labels, bboxes,
         tf_summary_image(dst_image, bboxes, 'image_shape_distorted')
 
         # Randomly flip the image horizontally.
-        #dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
+        dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
 
         # Randomly distort the colors. There are 4 ways to do it.
         dst_image = apply_with_random_selector(
