@@ -69,6 +69,7 @@ def bboxes_sort(scores, bboxes, top_k=400, scope=None):
     Return:
       scores, bboxes: Sorted Tensors/Dictionaries of shape Batch x Top_k x 1|4.
     """
+
     # Dictionaries as inputs.
     if isinstance(scores, dict) or isinstance(bboxes, dict):
         with tf.name_scope(scope, 'bboxes_sort_dict'):

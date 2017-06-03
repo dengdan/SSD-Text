@@ -16,6 +16,7 @@ def eval(gt_txt_dir, det_txt_dir, xml_path = '~/temp_nfs/results/no-use', write_
     with open(write_path, 'w') as f:
       print(result, file = f)
       print("result written to %s"%(write_path))
+  return result
 
 
 if __name__ == '__main__':

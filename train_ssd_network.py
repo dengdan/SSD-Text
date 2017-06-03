@@ -45,8 +45,7 @@ tf.app.flags.DEFINE_float(
 
 tf.app.flags.DEFINE_string('train_dir', None,'Directory where checkpoints and event logs are written to.')
 #tf.app.flags.DEFINE_integer('num_clones', 1,'Number of model clones to deploy.')
-tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
-                            'Use CPUs to deploy clones.')
+tf.app.flags.DEFINE_boolean('clone_on_cpu', False, 'Use CPUs to deploy clones.')
                         
 tf.app.flags.DEFINE_integer(
     'num_readers', 8,

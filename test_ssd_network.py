@@ -138,8 +138,11 @@ def test():
                                        data_format=DATA_FORMAT,
                                        resize=FLAGS.eval_resize,
                                        difficults=None)
-            image_processed = tf.expand_dims(image_processed, 0)
+                                       
+            gclasses, glocalizations, gscores = \
+                ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
 
+            image_processed = tf.expand_dims(image_processed, 0)
         # =================================================================== #
         # SSD Network + Ouputs decoding.
         # =================================================================== #
@@ -147,7 +150,10 @@ def test():
         with slim.arg_scope(arg_scope):
             predictions, localisations, logits, end_points = \
                 ssd_net.net(image_processed, is_training=False)
-
+        #neg_pred = tf.zeros_like(gscores)
+        #predictions = tf.stack([neg_pred, gscores])
+        #predictions = tf.transpose(predictions)
+        #predictions = tf.expand_dims(predictions, 0)
         # Performing post-processing on CPU: loop-intensive, usually more efficient.
         with tf.device('/device:CPU:0'):
             # Detected objects from SSD output.
@@ -248,7 +254,7 @@ def test():
               print 'image %d/%d'%(i + 1, data_provider.num_images)
               image_data, bbox_data, label_data, name = data_provider.get_data();
               
-              sdict, bdict = sess.run([rscores, rbboxes], feed_dict = {image:image_data})
+              sdict, bdict = sess.run([rscores, rbboxes], feed_dict = {image:image_data, gbboxes:bbox_data, glabels:label_data})
               bbox_score = sdict[1][0, :]
               bbox_pred = bdict[1][0, ...]
               write_result(name, image_data, bbox_pred, bbox_score, path = txt_path)
@@ -260,7 +266,14 @@ def test():
             create_zip()
             import datasets.deteval
             result_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'fixed_eval.txt')
-            datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path, write_path = result_path);
+            result = datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path, write_path = result_path);
+            """
+            eval_str = util.str.find_all(result, '\<score.+\/\>')[0]
+            recall, precision, fmean = [float(d) for d in util.str.find_all(eval_str, '\.*\d+')[0:3]]
+            tf.summary.scalar('%s_recall'%(FLAGS.dataset_split_name), recall)
+            tf.summary.scalar('%s_precision'%(FLAGS.dataset_split_name), precision)
+            tf.summary.scalar('%s_fmean'%(FLAGS.dataset_split_name), fmean)
+            """
             
 def main(_):
     if FLAGS.wait_for_checkpoints:

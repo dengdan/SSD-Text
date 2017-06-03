@@ -121,6 +121,7 @@ def tf_ssd_bboxes_encode(labels,
             imask = tf.cast(mask, tf.int64)
             fmask = tf.cast(mask, dtype)
             # Update values using mask.
+            label = tf.cast(label, feat_labels.dtype)
             feat_labels = imask * label + (1 - imask) * feat_labels
             feat_scores = tf.where(mask, jaccard, feat_scores)
 
