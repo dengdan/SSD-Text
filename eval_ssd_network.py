@@ -49,7 +49,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_float(
     'nms_threshold', 0.45, 'Non-Maximum Selection threshold.')
 tf.app.flags.DEFINE_float(
-    'matching_threshold', 0.5, 'Matching threshold with groundtruth objects.')
+    'match_threshold', 0.5, 'Matching threshold with groundtruth objects.')
 tf.app.flags.DEFINE_integer(
     'eval_resize', 4, 'Image resizing: None / CENTRAL_CROP / PAD_AND_RESIZE / WARP_RESIZE.')
 tf.app.flags.DEFINE_integer(
@@ -163,7 +163,7 @@ def main(_):
 
             # Encode groundtruth labels and bboxes.
             gclasses, glocalizations, gscores = \
-                ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
+                ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors, match_threshold = FLAGS.match_threshold)
 
             # Evaluation batch.
             b_image, b_glabels, b_gbboxes, b_gdifficults, b_gbbox_img, b_gclasses, b_glocalizations, b_gscores = tf.train.batch(
@@ -198,7 +198,7 @@ def main(_):
             # Compute TP and FP statistics.
             num_gbboxes, tp, fp, rscores = tfe.bboxes_matching_batch(rscores.keys(), rscores, rbboxes,
                                           b_glabels, b_gbboxes, b_gdifficults,
-                                          matching_threshold=FLAGS.matching_threshold)
+                                          matching_threshold=FLAGS.match_threshold)
 
         # Variables to restore: moving avg. or normal weights.
         if FLAGS.moving_average_decay:

@@ -139,8 +139,8 @@ def test():
                                        resize=FLAGS.eval_resize,
                                        difficults=None)
                                        
-            gclasses, glocalizations, gscores = \
-                ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
+           # gclasses, glocalizations, gscores = \
+           #     ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors, match_threshold = FLAGS.matching_threshold)
 
             image_processed = tf.expand_dims(image_processed, 0)
         # =================================================================== #

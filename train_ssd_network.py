@@ -264,7 +264,7 @@ def main(_):
                                        data_format=DATA_FORMAT)
             image = tf.identity(image, 'processed_image')
             # Encode groundtruth labels and bboxes.
-            gclasses, glocalizations, gscores = ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
+            gclasses, glocalizations, gscores = ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors, match_threshold = FLAGS.match_threshold)
             batch_shape = [1] + [len(ssd_anchors)] * 3
             # Training batches and queue.
 #                tf_utils.reshape_list([image, gclasses, glocalizations, gscores]),

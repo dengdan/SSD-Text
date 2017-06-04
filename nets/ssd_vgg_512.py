@@ -147,7 +147,7 @@ class SSDNet(object):
                                       self.params.anchor_offset,
                                       dtype)
 
-    def bboxes_encode(self, labels, bboxes, anchors,
+    def bboxes_encode(self, labels, bboxes, anchors, match_threshold, 
                       scope=None):
         """Encode labels and bounding boxes.
         """
@@ -155,7 +155,7 @@ class SSDNet(object):
             labels, bboxes, anchors,
             self.params.num_classes,
             self.params.no_annotation_label,
-            ignore_threshold=0.5,
+            match_threshold=match_threshold,
             prior_scaling=self.params.prior_scaling,
             scope=scope)
 
@@ -198,7 +198,6 @@ class SSDNet(object):
         """
         return ssd_losses(confidences, logits, localizations,
                           gclasses, glocalizations, gscores,
-                          match_threshold=match_threshold,
                           negative_ratio=negative_ratio,
                           alpha=alpha,
                           label_smoothing=label_smoothing,
@@ -573,12 +572,11 @@ def reshape_and_concat(tensors):
     
 def ssd_losses(confidences, logits, localizations,
                gclasses, glocalizations, gscores,
-               match_threshold=0.5,
                negative_ratio=3.,
                alpha=1.,
                label_smoothing=0.,
                scope=None):
-    """Loss functions for training the SSD 300 VGG network.
+    """Loss functions for training the SSD 512 VGG network.
 
     This function defines the different loss components of the SSD, and
     adds them to the TF loss collection.
@@ -594,8 +592,7 @@ def ssd_losses(confidences, logits, localizations,
     with tf.name_scope(scope, 'ssd_losses'):
         dtype = logits.dtype
 
-        pos_mask = gscores >= match_threshold
-        gclasses = tf.where(pos_mask, gclasses, tf.zeros_like(gclasses))
+        pos_mask = gclasses > 0
         neg_mask = tf.logical_not(pos_mask)
         # if negative, return score of being background; else, return 0
         float_pos_mask = tf.cast(pos_mask, dtype)
@@ -603,7 +600,7 @@ def ssd_losses(confidences, logits, localizations,
         
         selected_neg = []
 
-        batch_size = tensor_shape(gscores)[0]
+        batch_size = tensor_shape(gclasses)[0]
         for img_idx in xrange(batch_size):
             img_neg_conf = nvalues[img_idx, :]
             img_pos_mask = pos_mask[img_idx, :]
@@ -633,18 +630,17 @@ def ssd_losses(confidences, logits, localizations,
         tf.summary.scalar('negative_postive_ratio', tf.reduce_sum(selected_neg) / tf.reduce_sum(float_pos_mask))
         tf.summary.scalar('percent_instances', tf.reduce_sum(cls_weight) / tf.cast(tf.reduce_prod(tf.shape(cls_weight)), dtype))
         tf.summary.scalar('number_of_instances', tf.reduce_sum(cls_weight))
-        tf.summary.scalar('match_threshold', match_threshold)
         # Add cross-entropy loss.
         
         N = tf.reduce_sum(float_pos_mask)
         
+        """
         cls_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = gclasses)
         with tf.name_scope('cross_entropy_pos'):
             tf.losses.compute_weighted_loss(cls_loss, float_pos_mask)
         with tf.name_scope('cross_entropy_neg'):
             tf.losses.compute_weighted_loss(cls_loss, tf.cast(neg_mask, dtype))
         """ 
-        
         with tf.name_scope('cross_entropy'):            
             def has_pos():
                 cls_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = gclasses)
@@ -653,7 +649,6 @@ def ssd_losses(confidences, logits, localizations,
                 return tf.constant(.0);
             cls_loss = tf.cond(N > 0, has_pos, no_pos, name = 'cls_loss')
             tf.add_to_collection(tf.GraphKeys.LOSSES, cls_loss)
-        """
         with tf.name_scope('localization'):
             def has_pos():
                 weights = tf.expand_dims(float_pos_mask, axis=-1)

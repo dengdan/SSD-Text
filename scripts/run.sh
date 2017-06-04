@@ -9,7 +9,7 @@ EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 
 LOSS_ALPHA=1
-LR=0.0001
+LR=0.00005
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3
@@ -107,8 +107,8 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --keep_top_k=1000 \
             --wait_for_checkpoints=${wait_for_checkpoints} \
-            --keep_threshold=0.5 \
-            --nms_threshold=0.125
+            --keep_threshold=0.7 \
+            --nms_threshold=0.0
     ;;
 esac
 
