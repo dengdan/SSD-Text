@@ -261,19 +261,12 @@ def test():
               img_gt = draw_bbox(image_data, bbox_data, label_data, color = util.img.COLOR_GREEN)
               img_pred = draw_bbox(image_data, bbox_pred, bbox_score, util.img.COLOR_RGB_RED)
               util.img.imwrite(image_path%(name, 'pred'), img_pred, rgb = True)
-              util.img.imwrite(image_path%(name, 'gt'), img_gt, rgb = True)
+              #util.img.imwrite(image_path%(name, 'gt'), img_gt, rgb = True)
             
             create_zip()
             import datasets.deteval
             result_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'fixed_eval.txt')
             result = datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path, write_path = result_path);
-            """
-            eval_str = util.str.find_all(result, '\<score.+\/\>')[0]
-            recall, precision, fmean = [float(d) for d in util.str.find_all(eval_str, '\.*\d+')[0:3]]
-            tf.summary.scalar('%s_recall'%(FLAGS.dataset_split_name), recall)
-            tf.summary.scalar('%s_precision'%(FLAGS.dataset_split_name), precision)
-            tf.summary.scalar('%s_fmean'%(FLAGS.dataset_split_name), fmean)
-            """
             
 def main(_):
     if FLAGS.wait_for_checkpoints:

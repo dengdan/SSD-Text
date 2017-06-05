@@ -7,9 +7,10 @@ SIZE=512
 TRAIN_DIR=$HOME/models/ssd-tf/debug
 EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
-
+MIN_OBJECT_COVERED=0.25
+MATCH_THRESHOLD=0.25
 LOSS_ALPHA=1
-LR=0.00005
+LR=0.00001
 if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
     IMG_PER_GPU=$3
@@ -37,7 +38,7 @@ case $ACTION in
         python train_ssd_network.py \
             --dataset_dir=$DATASET \
             --negative_ratio=3 \
-            --match_threshold=0.25 \
+            --match_threshold=${MATCH_THRESHOLD} \
             --train_dir=$TRAIN_DIR \
             --learning_rate_decay_type=fixed \
             --learning_rate=0.0001 \
@@ -46,33 +47,27 @@ case $ACTION in
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
             --should_trace=0 \
-            --min_object_covered=0.25 \
-            --min_width_covered=0.25 \
-            --min_height_covered=0.8 \
+            --min_object_covered=${MIN_OBJECT_COVERED} \
             --loss_alpha=${LOSS_ALPHA} \
             --learning_rate=${LR} \
-            --max_number_of_steps=40000
+            --max_number_of_steps=100000
     ;;
     train)
         DATASET=$HOME/dataset/SSD-tf/ICDAR
         python train_ssd_network.py \
+            --checkpoint_path=/root/models/ssd-pretrain \
             --dataset_dir=$DATASET \
             --negative_ratio=3 \
-            --match_threshold=0.5 \
+            --match_threshold=${MATCH_THRESHOLD} \
             --train_dir=$TRAIN_DIR \
             --learning_rate_decay_type=fixed \
-            --learning_rate=0.0001 \
             --dataset_name=icdar2013 \
             --dataset_split_name=train \
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
-            --should_trace=0 \
-            --min_object_covered=0.95 \
-            --min_width_covered=0.3 \
-            --min_height_covered=0.95 \
+            --min_object_covered=${MIN_OBJECT_COVERED} \
             --learning_rate=${LR} \
             --loss_alpha=${LOSS_ALPHA} \
-            --loss_weighted_blocks=${WEIGHTED_BLOCK} \
             --max_number_of_steps=300000
     ;;
     eval)
@@ -108,7 +103,7 @@ case $ACTION in
             --keep_top_k=1000 \
             --wait_for_checkpoints=${wait_for_checkpoints} \
             --keep_threshold=0.7 \
-            --nms_threshold=0.0
+            --nms_threshold=0.45
     ;;
 esac
 

@@ -14,7 +14,7 @@ slim = tf.contrib.slim
 # Main flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_string(
-    'model_name', 'ssd_300_vgg', 'Name of the model to convert.')
+    'model_name', 'ssd_512_vgg', 'Name of the model to convert.')
 tf.app.flags.DEFINE_string(
     'num_classes', 21, 'Number of classes in the dataset.')
 tf.app.flags.DEFINE_string(
@@ -56,7 +56,7 @@ def main(_):
             session.run(init_op)
 
             # Save model in checkpoint.
-            saver = tf.train.Saver()
+            saver = tf.train.Saver(write_version=2)
             ckpt_path = FLAGS.caffemodel_path.replace('.caffemodel', '.ckpt')
             saver.save(session, ckpt_path, write_meta_graph=False)
 

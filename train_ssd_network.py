@@ -37,7 +37,7 @@ tf.app.flags.DEFINE_float(
 tf.app.flags.DEFINE_float(
     'negative_ratio', 3., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_float(
-    'match_threshold', 0.5, 'Matching threshold in the loss function.')
+    'match_threshold', 0.25, 'Matching threshold in the loss function.')
 
 # =========================================================================== #
 # General Flags.
@@ -54,7 +54,7 @@ tf.app.flags.DEFINE_integer(
     'num_preprocessing_threads', 4,
     'The number of threads used to create the batches.')
 tf.app.flags.DEFINE_float(
-    'min_object_covered', 0.9, 'The cropped area of the image must contain at least this fraction of any bounding box supplied, used in preprocessing')
+    'min_object_covered', 0.5, 'The cropped area of the image must contain at least this fraction of any bounding box supplied, used in preprocessing')
 tf.app.flags.DEFINE_float(
     'min_width_covered', 0.5, 'The minimal fraction of covered width needed to keep that bbox in the cropped image , used in preprocessing')
 tf.app.flags.DEFINE_float(
@@ -74,39 +74,12 @@ tf.app.flags.DEFINE_float(
 # =========================================================================== #
 # Optimization Flags.
 # =========================================================================== #
-tf.app.flags.DEFINE_float(
-    'weight_decay', 0.00004, 'The weight decay on the model weights.')
+tf.app.flags.DEFINE_float('weight_decay', 0.0005, 'The weight decay on the model weights.')
 tf.app.flags.DEFINE_string(
-    'optimizer', 'rmsprop',
+    'optimizer', 'momentum',
     'The name of the optimizer, one of "adadelta", "adagrad", "adam",'
     '"ftrl", "momentum", "sgd" or "rmsprop".')
-tf.app.flags.DEFINE_float(
-    'adadelta_rho', 0.95,
-    'The decay rate for adadelta.')
-tf.app.flags.DEFINE_float(
-    'adagrad_initial_accumulator_value', 0.1,
-    'Starting value for the AdaGrad accumulators.')
-tf.app.flags.DEFINE_float(
-    'adam_beta1', 0.9,
-    'The exponential decay rate for the 1st moment estimates.')
-tf.app.flags.DEFINE_float(
-    'adam_beta2', 0.999,
-    'The exponential decay rate for the 2nd moment estimates.')
-tf.app.flags.DEFINE_float('opt_epsilon', 1.0, 'Epsilon term for the optimizer.')
-tf.app.flags.DEFINE_float('ftrl_learning_rate_power', -0.5,
-                          'The learning rate power.')
-tf.app.flags.DEFINE_float(
-    'ftrl_initial_accumulator_value', 0.1,
-    'Starting value for the FTRL accumulators.')
-tf.app.flags.DEFINE_float(
-    'ftrl_l1', 0.0, 'The FTRL l1 regularization strength.')
-tf.app.flags.DEFINE_float(
-    'ftrl_l2', 0.0, 'The FTRL l2 regularization strength.')
-tf.app.flags.DEFINE_float(
-    'momentum', 0.9,
-    'The momentum for the MomentumOptimizer and RMSPropOptimizer.')
-tf.app.flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
-tf.app.flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
+tf.app.flags.DEFINE_float('momentum', 0.9, 'The momentum for the MomentumOptimizer and RMSPropOptimizer.')
 
 # =========================================================================== #
 # Learning Rate Flags.
@@ -117,16 +90,6 @@ tf.app.flags.DEFINE_string(
     'Specifies how the learning rate is decayed. One of "fixed", "exponential",'
     ' or "polynomial"')
 tf.app.flags.DEFINE_float('learning_rate', 0.0001, 'Initial learning rate.')
-tf.app.flags.DEFINE_float(
-    'end_learning_rate', 0.0001,
-    'The minimal end learning rate used by a polynomial decay learning rate.')
-tf.app.flags.DEFINE_float(
-    'label_smoothing', 0.0, 'The amount of label smoothing.')
-tf.app.flags.DEFINE_float(
-    'learning_rate_decay_factor', 0.94, 'Learning rate decay factor.')
-tf.app.flags.DEFINE_float(
-    'num_epochs_per_decay', 2.0,
-    'Number of epochs after which learning rate decays.')
 tf.app.flags.DEFINE_float(
     'moving_average_decay', None,
     'The decay to use for the moving average.'
@@ -170,7 +133,7 @@ tf.app.flags.DEFINE_string(
     'checkpoint_model_scope', None,
     'Model scope in the checkpoint. None if the same as the trained model.')
 tf.app.flags.DEFINE_string(
-    'checkpoint_exclude_scopes', None,
+    'checkpoint_exclude_scopes', 'ssd_512_vgg/block8_box',
     'Comma-separated list of scopes of variables to exclude when restoring '
     'from a checkpoint.')
 tf.app.flags.DEFINE_string(
@@ -178,17 +141,11 @@ tf.app.flags.DEFINE_string(
     'Comma-separated list of scopes to filter the set of variables to train.'
     'By default, None would train all the variables.')
 tf.app.flags.DEFINE_boolean(
-    'ignore_missing_vars', False,
+    'ignore_missing_vars', True,
     'When restoring a checkpoint would ignore missing variables.')
 
 
-# Debug flags
-tf.app.flags.DEFINE_boolean(
-    'should_trace', False,
-    'RunOption.TRACE_LEVEL is TRACE_ALL, for debug only.')
-
 FLAGS = tf.app.flags.FLAGS
-
 
 # =========================================================================== #
 # Main training routine.
@@ -268,17 +225,16 @@ def main(_):
             batch_shape = [1] + [len(ssd_anchors)] * 3
             # Training batches and queue.
 #                tf_utils.reshape_list([image, gclasses, glocalizations, gscores]),
-            r = tf.train.batch(
+            b_image, b_gclasses, b_glocalizations, b_gscores = tf.train.batch(
                 [image, gclasses, glocalizations, gscores],
                 batch_size = batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
-            b_image, b_gclasses, b_glocalizations, b_gscores = tf_utils.reshape_list(r, batch_shape)
 
             # Intermediate queueing: unique batch computation pipeline for all
             # GPUs running the training.
             batch_queue = slim.prefetch_queue.prefetch_queue(
-                tf_utils.reshape_list([b_image, b_gclasses, b_glocalizations, b_gscores]),
+                [b_image, b_gclasses, b_glocalizations, b_gscores],
                 capacity=2 * num_clones)
 
         # =================================================================== #
@@ -306,8 +262,7 @@ def main(_):
                            b_gclasses, b_glocalizations, b_gscores,
                            match_threshold=FLAGS.match_threshold,
                            negative_ratio=FLAGS.negative_ratio,
-                           alpha=FLAGS.loss_alpha,
-                           label_smoothing=FLAGS.label_smoothing)
+                           alpha=FLAGS.loss_alpha)
             return end_points
 
         tf.summary.scalar('batch_size_per_gpu', t_batch_size)
@@ -399,22 +354,9 @@ def main(_):
             config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_memory_fraction;
         print config
         saver = tf.train.Saver(max_to_keep=500,
-                              # keep_checkpoint_every_n_hours=0.5,
                                write_version=2,
                                pad_step_number=False)
         debug_kargs = {}
-        save_summaries_secs = FLAGS.save_summaries_secs
-        if FLAGS.should_trace:                    
-            train_step_kwargs = {
-              'should_trace':tf.constant(1), 
-              'logdir':FLAGS.train_dir
-            }
-            trace_every_n_steps = 10,
-            debug_kargs = {
-                "train_step_kwargs":train_step_kwargs,
-                "trace_every_n_steps":trace_every_n_steps
-            }
-            save_summaries_secs = 3
 
         slim.learning.train(
             train_tensor,
@@ -425,12 +367,11 @@ def main(_):
             summary_op=summary_op,
             number_of_steps=FLAGS.max_number_of_steps,
             log_every_n_steps=FLAGS.log_every_n_steps,
-            save_summaries_secs= save_summaries_secs,
+            save_summaries_secs= FLAGS.save_summaries_secs,
             saver=saver,
             save_interval_secs=FLAGS.save_interval_secs,
             session_config=config,
-            sync_optimizer=None,
-            **debug_kargs
+            sync_optimizer=None
             )
 
 
