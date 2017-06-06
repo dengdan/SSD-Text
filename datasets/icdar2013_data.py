@@ -24,7 +24,8 @@ class ICDAR2013Data(object):
         self.num_images = len(images)
         self.data = [[img, bboxes, image_name] for(img, bboxes, image_name) in zip(images, bboxes, image_names)]
     
-        
+    def reset(self):
+        self.image_idx = -1;
     def get_images_and_gt(self, data_path, gt_path):
         image_names = util.io.ls(data_path, '.jpg')#[0:10];
         print "%d images found in %s"%(len(image_names), data_path);

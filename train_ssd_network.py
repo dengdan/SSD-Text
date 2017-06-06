@@ -328,6 +328,7 @@ def main(_):
             clones,
             optimizer,
             var_list=variables_to_train)
+        summaries |= set(model_deploy._add_gradients_summaries(clones_gradients))
         # Add total_loss to summary.
         summaries.add(tf.summary.scalar('total_loss', total_loss))
         # Create gradient updates.
@@ -356,7 +357,6 @@ def main(_):
         saver = tf.train.Saver(max_to_keep=500,
                                write_version=2,
                                pad_step_number=False)
-        debug_kargs = {}
 
         slim.learning.train(
             train_tensor,

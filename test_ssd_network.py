@@ -41,11 +41,11 @@ tf.app.flags.DEFINE_integer(
     'select_top_k', 400, 'Select top-k detected bounding boxes.')
 tf.app.flags.DEFINE_integer(
     'keep_top_k', 200, 'Keep top-k detected objects.')
-tf.app.flags.DEFINE_float(
-    'keep_threshold', 0.0, 'Keep detected objects with confidence not less than it')
+tf.app.flags.DEFINE_string(
+    'keep_threshold', '0.0', 'Keep detected objects with confidence not less than it')
     
-tf.app.flags.DEFINE_float(
-    'nms_threshold', 0.5, 'Non-Maximum Selection threshold.')
+tf.app.flags.DEFINE_string(
+    'nms_threshold', '0.5', 'Non-Maximum Selection threshold.')
 tf.app.flags.DEFINE_integer(
     'eval_resize', 4, 'Image resizing: None / CENTRAL_CROP / PAD_AND_RESIZE / WARP_RESIZE.')
 tf.app.flags.DEFINE_integer(
@@ -87,23 +87,20 @@ tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
     'as `None`, then the model_name flag is used.')
 tf.app.flags.DEFINE_float(
-    'moving_average_decay', None,
-    'The decay to use for the moving average.'
-    'If left as None, then moving averages are not used.')
-tf.app.flags.DEFINE_float(
-    'gpu_memory_fraction', 0.3, 'GPU memory fraction to use.')
+    'gpu_memory_fraction', 0.2, 'GPU memory fraction to use.')
 tf.app.flags.DEFINE_boolean(
     'wait_for_checkpoints', True, 'Wait for new checkpoints in the eval loop.')
 
+tf.app.flags.DEFINE_boolean(
+    'test_all_checkpoints', False, 'test all existed ckpts')
 
 FLAGS = tf.app.flags.FLAGS
+keep_thresholds = [float(v) for v in FLAGS.keep_threshold.split(',')]
+nms_thresholds = [float(v) for v in FLAGS.nms_threshold.split(',')]
 
-        
-def test():
-    if not FLAGS.dataset_dir:
-        raise ValueError('You must supply the dataset directory with --dataset_dir')
+    
+def test(ckpt_path, data_provider, keep_threshold, nms_threshold):
 
-    tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default():
         tf_global_step = slim.get_or_create_global_step()
 
@@ -160,7 +157,7 @@ def test():
             localisations = ssd_net.bboxes_decode(localisations, ssd_anchors)
             rscores, rbboxes = ssd_net.detected_bboxes(predictions, localisations,
                                         select_threshold=FLAGS.select_threshold,
-                                        nms_threshold=FLAGS.nms_threshold,
+                                        nms_threshold=nms_threshold,
                                         clipping_bbox=None,
                                         top_k=FLAGS.select_top_k,
                                         keep_top_k=FLAGS.keep_top_k)
@@ -173,18 +170,14 @@ def test():
         # config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         
         
-        if util.io.is_dir(FLAGS.checkpoint_path):
-            ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_path)
-            ckpt_path = ckpt.model_checkpoint_path
-        else:
-            ckpt_path = FLAGS.checkpoint_path;
+
         saver = tf.train.Saver()
         logging.info('ckpt_path = %s'%(ckpt_path))
-        def check(index, score, score_threshold = FLAGS.keep_threshold, num_threshold = FLAGS.keep_top_k):
+        def check(index, score, score_threshold = keep_threshold, num_threshold = FLAGS.keep_top_k):
           if score < score_threshold:
             return False
-          if index > num_threshold:
-            return False
+          #if index > num_threshold:
+          #  return False
             
           return True
           
@@ -234,22 +227,22 @@ def test():
           
         with tf.Session(config = config) as sess:
             step = saver.restore(sess, ckpt_path)
-            import datasets.icdar2013_data
-            data_provider = datasets.icdar2013_data.ICDAR2013Data(root_dir = FLAGS.dataset_dir, split = FLAGS.dataset_split_name)
             ckpt_name = util.io.get_filename(str(ckpt_path));
             ckpt_dir = util.io.get_dir(str(ckpt_path));
             dump_path = util.io.join_path(ckpt_dir, 'eval')
-            util.init_logger(log_file='test.log', log_path = dump_path, mode = 'w')
-            xml_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name,  'xml')
-            txt_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'txt')
-            zip_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, ckpt_name + '.' + FLAGS.dataset_split_name +'.zip')
+            #util.init_logger(log_file='test.log', log_path = dump_path, mode = 'w')
+            thr_str = "confidence_%f_nms_threshold_%f"%(keep_threshold, nms_threshold)
+            xml_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, thr_str, 'xml')
+            txt_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name,  thr_str,'txt')
+            zip_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name,  thr_str, ckpt_name + '.' + FLAGS.dataset_split_name +'.zip')
+            image_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, thr_str, "vis", "%s_%s.jpg")
+            result_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, thr_str, 'fixed_eval.xml')
             def create_zip():
               cmd = 'cd %s;zip -j %s %s/*'%(dump_path, zip_path, txt_path);
               print cmd
               print util.cmd.cmd(cmd);
               print "zip file created: ", util.io.join_path(dump_path, zip_path)
               
-            image_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, "vis", "%s_%s.jpg")
             for i in xrange(data_provider.num_images):
               print 'image %d/%d'%(i + 1, data_provider.num_images)
               image_data, bbox_data, label_data, name = data_provider.get_data();
@@ -265,16 +258,37 @@ def test():
             
             create_zip()
             import datasets.deteval
-            result_path = util.io.join_path(dump_path, ckpt_name, FLAGS.dataset_split_name, 'fixed_eval.txt')
             result = datasets.deteval.eval(det_txt_dir = txt_path, gt_txt_dir = data_provider.gt_path, xml_path = xml_path, write_path = result_path);
-            
+
+def get_dataprovider():
+    if not FLAGS.dataset_dir:
+        raise ValueError('You must supply the dataset directory with --dataset_dir')
+    import datasets.icdar2013_data
+    data_provider = datasets.icdar2013_data.ICDAR2013Data(root_dir = FLAGS.dataset_dir, split = FLAGS.dataset_split_name)
+    return data_provider
 def main(_):
-    if FLAGS.wait_for_checkpoints:
+    tf.logging.set_verbosity(tf.logging.INFO)
+    data_provider = get_dataprovider()
+    if not FLAGS.test_all_checkpoints:
+        last_ckpt = None
         while True:
-            test()
-            time.sleep(600)
+            ckpt_path = util.tf.get_latest_ckpt(FLAGS.checkpoint_path);
+            if ckpt_path == last_ckpt:
+                print("Waiting for new checkpoint...")
+                time.sleep(60)
+            last_ckpt = ckpt_path                
+            for keep_threshold in keep_thresholds:
+                for nms_threshold in nms_thresholds:
+                    data_provider.reset()
+                    test(ckpt_path, data_provider, keep_threshold, nms_threshold)
+            if not FLAGS.wait_for_checkpoints:
+                break;
     else:
-        test()
+        for ckpt_path in util.tf.get_all_ckpts(FLAGS.checkpoint_path):
+            for keep_threshold in keep_thresholds:
+                for nms_threshold in nms_thresholds:
+                    data_provider.reset()
+                    test(ckpt_path, data_provider, keep_threshold, nms_threshold)
             
 if __name__ == '__main__':
     tf.app.run()

@@ -113,7 +113,7 @@ __all__ = ['create_clones',
            'optimize_clones',
            'DeployedModel',
            'DeploymentConfig',
-           'Clone',
+           'Clone','_add_gradients_summaries'
            ]
 
 
@@ -438,6 +438,14 @@ def _sum_clones_gradients(clone_grads):
         for g, v in grad_and_vars:
             assert v == var
             if g is not None:
+                g = tf.clip_by_value(g, -1, 1)
+                nan_mask = tf.is_nan(g)
+                def has_nan():
+                    return tf.where(nan_mask, g, tf.zeros_like(g))            
+                    
+                def has_no_nan():
+                    return g
+                g = tf.cond(tf.reduce_sum(tf.cast(nan_mask, tf.float32)) > 0,  has_nan, has_no_nan)
                 grads.append(g)
         if grads:
             if len(grads) > 1:
@@ -466,10 +474,10 @@ def _add_gradients_summaries(grads_and_vars):
                 grad_values = grad.values
             else:
                 grad_values = grad
-            summaries.append(tf.histogram_summary(var.op.name + ':gradient',
+            summaries.append(tf.summary.histogram(var.op.name + '_gradient',
                                                   grad_values))
-            summaries.append(tf.histogram_summary(var.op.name + ':gradient_norm',
-                                                  tf.global_norm([grad_values])))
+#            summaries.append(tf.summary.histogram(var.op.name + ':gradient_norm',
+ #                                                 tf.global_norm([grad_values])))
         else:
             tf.logging.info('Var %s has no gradient', var.op.name)
     return summaries

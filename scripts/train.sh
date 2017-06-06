@@ -1,20 +1,17 @@
 set -x
 set -e
 export CUDA_VISIBLE_DEVICES=$1
-ACTION=$2
-TRAIN_DIR=$HOME/models/ssd-tf/scut
-
 SIZE=512
+TRAIN_DIR=$HOME/models/ssd-tf/scut
+EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
 MODEL_NAME=ssd_${SIZE}_vgg
 MIN_OBJECT_COVERED=0.25
 MATCH_THRESHOLD=0.25
 LOSS_ALPHA=1
 LR=0.001
-if [ $ACTION == 'train' ]
+if [ $ACTION == 'pretrain' ] || [ $ACTION == 'train' ]
 then
-    DATASET=$3
-    IMG_PER_GPU=$4
-    CKPT_PATH=$5
+    IMG_PER_GPU=$3
     
     # get the number of gpus
     OLD_IFS="$IFS" 
@@ -25,38 +22,44 @@ then
 
     # batch_size = num_gpus * IMG_PER_GPU
     BATCH_SIZE=`expr $num_gpus \* $IMG_PER_GPU`
-    
-    if [ $DATASET == 'synthtext' ]
-    then
-        DATA_PATH=SynthText
-    elif [ $DATASET == 'scut' ]
-    then
-        DATA_PATH=SCUT
-    elif [ $DATASET == 'icdar2013' ]
-    then
-        DATA_PATH=ICDAR
-    else
-        echo invalid dataset: $DATASET
-        exit
-    fi
 else
     SPLIT=$3
-    EVAL_DIR=${TRAIN_DIR}/eval/$SPLIT
+    EVAL_DIR=${TRAIN_DIR}/eval
     CKPT_PATH=$TRAIN_DIR
 fi
 
 
 case $ACTION in 
-    train)
-        DATASET_DIR=$HOME/dataset/SSD-tf/${DATA_PATH}
+    pretrain)
+        
+        DATASET=$HOME/dataset/SSD-tf/SynthText
         python train_ssd_network.py \
-            --checkpoint_path=${CKPT_PATH} \
-            --dataset_dir=${DATASET_DIR} \
+            --dataset_dir=$DATASET \
             --negative_ratio=3 \
             --match_threshold=${MATCH_THRESHOLD} \
             --train_dir=$TRAIN_DIR \
             --learning_rate_decay_type=fixed \
-            --dataset_name=${DATASET} \
+            --learning_rate=0.0001 \
+            --dataset_name=synthtext \ #icdar2013 \
+            --dataset_split_name=train \
+            --model_name=$MODEL_NAME \
+            --batch_size=$BATCH_SIZE \
+            --should_trace=0 \
+            --min_object_covered=${MIN_OBJECT_COVERED} \
+            --loss_alpha=${LOSS_ALPHA} \
+            --learning_rate=${LR} \
+            --max_number_of_steps=100000
+    ;;
+    train)
+        DATASET=$HOME/dataset/SSD-tf/ICDAR
+        python train_ssd_network.py \
+            --checkpoint_path=/root/models/ssd-pretrain \
+            --dataset_dir=$DATASET \
+            --negative_ratio=3 \
+            --match_threshold=${MATCH_THRESHOLD} \
+            --train_dir=$TRAIN_DIR \
+            --learning_rate_decay_type=fixed \
+            --dataset_name=icdar2013 \
             --dataset_split_name=train \
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \
@@ -96,8 +99,8 @@ case $ACTION in
             --dataset_split_name=$SPLIT \
             --model_name=$MODEL_NAME \
             --wait_for_checkpoints=${wait_for_checkpoints} \
-            --keep_threshold=0.125,0.5 \
-            --nms_threshold=0.25,0.45
+            --keep_threshold=0.05,0.1,0.125,0.15,0.2,0.3,0.4,0.5,0.6,0.7 \
+            --nms_threshold=0.0,0.05,0.1,0.2,0.25,0.3,0.4,0.45,0.5
     ;;
 esac
 
