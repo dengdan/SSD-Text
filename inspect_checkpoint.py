@@ -25,9 +25,18 @@ import numpy as np
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
-
+import util
 FLAGS = None
-
+def cmp_ckpts(file1, file2):
+    reader1 = pywrap_tensorflow.NewCheckpointReader(file1)
+    reader2 = pywrap_tensorflow.NewCheckpointReader(file2)
+    kv = reader1.get_variable_to_shape_map()
+    for key in kv:
+        v1 = reader1.get_tensor(key)
+        v2 = reader2.get_tensor(key)
+        if not util.str.contains(key, 'Momentum'):
+            if np.mean(v1) != np.mean(v2):
+                print(key, np.mean(v1), np.mean(v2))
 
 def print_tensors_in_checkpoint_file(file_name, tensor_name, all_tensors):
     """Prints tensors in a checkpoint file.
@@ -94,6 +103,8 @@ def parse_numpy_printoption(kv_str):
 
 
 def main(unused_argv):
+    cmp_ckpts(FLAGS.file_name1, FLAGS.file_name2)
+    return
     if not FLAGS.file_name:
         print("Usage: inspect_checkpoint --file_name=checkpoint_file_name "
               "[--tensor_name=tensor_to_print]")
@@ -107,7 +118,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.register("type", "bool", lambda v: v.lower() == "true")
     parser.add_argument(
-            "--file_name", type=str, default="", help="Checkpoint filename. "
+            "--file_name1", type=str, default="", help="Checkpoint filename. "
+                                        "Note, if using Checkpoint V2 format, file_name is the "
+                                        "shared prefix between all files in the checkpoint.")
+    parser.add_argument(
+            "--file_name2", type=str, default="", help="Checkpoint filename. "
                                         "Note, if using Checkpoint V2 format, file_name is the "
                                         "shared prefix between all files in the checkpoint.")
     parser.add_argument(

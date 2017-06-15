@@ -452,6 +452,10 @@ def _sum_clones_gradients(clone_grads):
                 sum_grad = tf.add_n(grads, name=var.op.name + '/sum_grads')
             else:
                 sum_grad = grads[0]
+                
+            if var.name.find('biases') > 0:
+                sum_grad = sum_grad * 2;
+#            sum_grad = tf.Print(sum_grad, [var.name, tf.reduce_mean(sum_grad), tf.reduce_mean(var)])
             sum_grads.append((sum_grad, var))
     return sum_grads
 
@@ -474,10 +478,10 @@ def _add_gradients_summaries(grads_and_vars):
                 grad_values = grad.values
             else:
                 grad_values = grad
-            summaries.append(tf.summary.histogram(var.op.name + '_gradient',
-                                                  grad_values))
-#            summaries.append(tf.summary.histogram(var.op.name + ':gradient_norm',
- #                                                 tf.global_norm([grad_values])))
+            #summaries.append(tf.summary.histogram(var.op.name + '_gradient', grad_values))
+            summaries.append(tf.summary.scalar(var.op.name + '_gradient_mean/val_mean', tf.reduce_mean(grad_values)/tf.reduce_mean(var)))
+            summaries.append(tf.summary.scalar(var.op.name + '_val_mean', tf.reduce_mean(var)))
+            summaries.append(tf.summary.scalar(var.op.name + '_gradient_mean', tf.reduce_mean(grad_values)))
         else:
             tf.logging.info('Var %s has no gradient', var.op.name)
     return summaries

@@ -18,7 +18,7 @@ import tensorflow as tf
 import os
 slim = tf.contrib.slim
 
-FILE_PATTERN = 'scut_%s.tfrecords'
+FILE_PATTERN = '*_%s.tfrecords'
 ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying height and width.',
     'shape': 'Shape of the image',
@@ -27,7 +27,7 @@ ITEMS_TO_DESCRIPTIONS = {
 }
 NUM_CLASSES = 2
 split_to_sizes = {
-    'train': 1715
+    'train': 1715 + 229
 }
 
 def get_split(split_name, dataset_dir, file_pattern=FILE_PATTERN, reader=None):

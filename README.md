@@ -1,3 +1,3 @@
-1. 运行程序的入口是scripts/run.sh
-2. 运行前需要将pylib/src加入PYTHONPATH，里面封装了常用的python方法。
-
+Run SSD on icdar2013 text detection task.
+The implementation of SSD in tensorflow, i.e., [SSD-tensorfow](https://github.com/balancap/SSD-Tensorflow) has a lot of differences from the ssd paper, especally in the matching strategy and loss calculation. 
+I am trying to fix them in this repository.

@@ -133,7 +133,7 @@ tf.app.flags.DEFINE_string(
     'checkpoint_model_scope', None,
     'Model scope in the checkpoint. None if the same as the trained model.')
 tf.app.flags.DEFINE_string(
-    'checkpoint_exclude_scopes', 'ssd_512_vgg/block8_box',
+    'checkpoint_exclude_scopes', None,
     'Comma-separated list of scopes of variables to exclude when restoring '
     'from a checkpoint.')
 tf.app.flags.DEFINE_string(
@@ -153,8 +153,8 @@ FLAGS = tf.app.flags.FLAGS
 def main(_):
     if not FLAGS.dataset_dir:
         raise ValueError('You must supply the dataset directory with --dataset_dir')
+#    tf.logging.set_verbosity(tf.logging.DEBUG)
     util.init_logger(log_file = 'train_on_%s.log'%(FLAGS.dataset_name), log_path = FLAGS.train_dir, mode='a')
-    tf.logging.set_verbosity(tf.logging.DEBUG)
     
     # use all available gpus
     gpus = util.tf.get_available_gpus();
@@ -193,7 +193,7 @@ def main(_):
         from preprocessing import preprocessing_factory
         from preprocessing import ssd_vgg_preprocessing
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-            preprocessing_name, is_training=True)
+            preprocessing_name, is_training=False)
 
         tf_utils.print_configuration(FLAGS.__flags, ssd_params,
                                      dataset.data_sources, FLAGS.train_dir)
@@ -216,7 +216,7 @@ def main(_):
                                                              'object/bbox'])
             image = tf.identity(image, 'input_image')
             # Pre-processing image, labels and bboxes.
-            image, glabels, gbboxes = image_preprocessing_fn(image, glabels, gbboxes,
+            image, glabels, gbboxes, _ = image_preprocessing_fn(image, glabels, gbboxes,
                                        out_shape=ssd_shape,
                                        data_format=DATA_FORMAT)
             image = tf.identity(image, 'processed_image')

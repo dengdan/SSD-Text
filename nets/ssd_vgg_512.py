@@ -87,6 +87,7 @@ class SSDNet(object):
                       (378.88, 460.8),
                       (460.8, 542.72)],
         anchor_ratios=[[4, 1.0/4], [4, 8, 1.0/4, 1.0/8], [4, 8, 1.0/4, 1.0/8], [4, 8, 1.0/4, 1.0/8], [4, 8, 1.0/4, 1.0/8], [4, 1.0/4], [4, 1.0/4]],
+#        anchor_ratios=[[4, 8, 12, 1.0/4, 1.0/8, 1.0 / 12], [4, 8, 12, 1.0/4, 1.0/8, 1.0 / 12], [4, 8, 12, 1.0/4, 1.0/8, 1.0 / 12], [4, 8, 12, 1.0/4, 1.0/8, 1.0 / 12], [4, 8, 1.0/4, 1.0/8], [4, 1.0/4], [4, 1.0/4]],
         anchor_steps=[8, 16, 32, 64, 128, 256, 512],
         anchor_offset=0.5,
         normalizations=[20, -1, -1, -1, -1, -1, -1],
@@ -437,8 +438,8 @@ def ssd_net(inputs,
         # Block 5.
         net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
         end_points['block5'] = net
+        
         net = slim.max_pool2d(net, [3, 3], 1, scope='pool5')
-
         # Additional SSD blocks.
         # Block 6: let's dilate the hell out of it!
         net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')

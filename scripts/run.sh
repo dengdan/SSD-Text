@@ -2,7 +2,7 @@ set -x
 set -e
 export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
-TRAIN_DIR=$HOME/models/ssd-tf/scut
+TRAIN_DIR=$HOME/models/ssd-tf/48/icdar2013 #scut_no_preprocessing
 
 SIZE=512
 MODEL_NAME=ssd_${SIZE}_vgg

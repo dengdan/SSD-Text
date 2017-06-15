@@ -63,7 +63,7 @@ def txt2xml(txt_dir, output_path, use_existed = False):
             rect_list.append((x1, y1, width, height))
 
         rects = list(set(rect_list))
-        assert len(rects) == len(rect_list), "len(rects) != len(rect_list)"
+#        assert len(rects) == len(rect_list), "%s:repeated bbox returned"%(gt_path)
         for rect in rects:
             x, y, width, height = rect
             locNode = tagset.createElement('taggedRectangle')

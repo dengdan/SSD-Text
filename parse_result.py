@@ -23,8 +23,10 @@ def get_nms_threshold(xml):
     nms_threshold = float(data.split('_')[-1])
     return nms_threshold
 def get_score(data):
-    scores = util.str.find_all(data, '\.\d+')
-    return [float(d) for d in scores]
+    scores = util.str.find_all(data, '0\.+\d+')
+    if len(scores) == 0:
+        scores = [0.0] * 3;
+    return [float(d) for d in scores[:3]]
 def get_result_str(xml):
     content = util.io.cat(xml)
     data = util.str.find_all(content, '\<score.+\/\>')[0]
@@ -37,7 +39,7 @@ class Result(object):
         self.nms_threshold = get_nms_threshold(xml)
         self.data = get_result_str(xml)
         self.r, self.p, self.f = get_score(self.data)
-        
+    
     def Print(self):
         print "|%d|%f|%f|`%s`|"%(self.iteration,  self.confidence, self.nms_threshold, self.data)
 def sort_by_iteration_confidence(r1, r2):

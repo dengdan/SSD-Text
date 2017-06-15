@@ -87,7 +87,7 @@ tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
     'as `None`, then the model_name flag is used.')
 tf.app.flags.DEFINE_float(
-    'gpu_memory_fraction', 0.2, 'GPU memory fraction to use.')
+    'gpu_memory_fraction', 0.1, 'GPU memory fraction to use.')
 tf.app.flags.DEFINE_boolean(
     'wait_for_checkpoints', True, 'Wait for new checkpoints in the eval loop.')
 
@@ -253,7 +253,7 @@ def test(ckpt_path, data_provider, keep_threshold, nms_threshold):
               write_result(name, image_data, bbox_pred, bbox_score, path = txt_path)
               img_gt = draw_bbox(image_data, bbox_data, label_data, color = util.img.COLOR_GREEN)
               img_pred = draw_bbox(image_data, bbox_pred, bbox_score, util.img.COLOR_RGB_RED)
-              util.img.imwrite(image_path%(name, 'pred'), img_pred, rgb = True)
+              #util.img.imwrite(image_path%(name, 'pred'), img_pred, rgb = True)
               #util.img.imwrite(image_path%(name, 'gt'), img_gt, rgb = True)
             
             create_zip()
