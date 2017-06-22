@@ -174,10 +174,7 @@ def get_init_fn(flags):
             variables_to_restore.append(var)
     # Change model scope if necessary.
     if flags.checkpoint_model_scope is not None:
-        variables_to_restore = \
-            {var.op.name.replace(flags.model_name,
-                                 flags.checkpoint_model_scope): var
-             for var in variables_to_restore}
+        variables_to_restore = {var.op.name.replace(flags.model_name, flags.checkpoint_model_scope): var for var in variables_to_restore}
 
     if tf.gfile.IsDirectory(flags.checkpoint_path):
         checkpoint_path = tf.train.latest_checkpoint(flags.checkpoint_path)

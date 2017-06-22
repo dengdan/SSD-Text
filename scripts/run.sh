@@ -2,7 +2,8 @@ set -x
 set -e
 export CUDA_VISIBLE_DEVICES=$1
 ACTION=$2
-TRAIN_DIR=$HOME/models/ssd-tf/48/icdar2013 #scut_no_preprocessing
+TRAIN_DIR=$HOME/models/ssd-tf/control_ep/scut_no_preprocessing
+#TRAIN_DIR=$HOME/models/ssd-tf/48/icdar_no_preprocessing_2
 
 SIZE=512
 MODEL_NAME=ssd_${SIZE}_vgg
@@ -57,6 +58,7 @@ case $ACTION in
             --train_dir=$TRAIN_DIR \
             --learning_rate_decay_type=fixed \
             --dataset_name=${DATASET} \
+            --num_gpus=${num_gpus} \
             --dataset_split_name=train \
             --model_name=$MODEL_NAME \
             --batch_size=$BATCH_SIZE \

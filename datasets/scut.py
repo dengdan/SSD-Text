@@ -18,7 +18,7 @@ import tensorflow as tf
 import os
 slim = tf.contrib.slim
 
-FILE_PATTERN = '*_%s.tfrecords'
+FILE_PATTERN = 'scut_%s.tfrecords'
 ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying height and width.',
     'shape': 'Shape of the image',

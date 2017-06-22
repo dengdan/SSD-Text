@@ -46,6 +46,7 @@ def main(_):
         # Image placeholder and model.
         shape = (1, ssd_shape[0], ssd_shape[1], 3)
         img_input = tf.placeholder(shape=shape, dtype=tf.float32)
+        
         # Create model.
         with slim.arg_scope(ssd_net.arg_scope_caffe(caffemodel)):
             ssd_net.net(img_input, is_training=False)

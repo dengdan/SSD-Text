@@ -24,7 +24,7 @@ from nets import nets_factory
 import tf_utils
 import util
 slim = tf.contrib.slim
-
+ 
 DATA_FORMAT = 'NCHW'
 
 # =========================================================================== #
@@ -38,7 +38,7 @@ tf.app.flags.DEFINE_float(
     'negative_ratio', 3., 'Negative ratio in the loss function.')
 tf.app.flags.DEFINE_float(
     'match_threshold', 0.25, 'Matching threshold in the loss function.')
-
+tf.app.flags.DEFINE_integer('num_gpus', 1, 'The number of gpus can be used.')
 # =========================================================================== #
 # General Flags.
 # =========================================================================== #
@@ -157,7 +157,7 @@ def main(_):
     util.init_logger(log_file = 'train_on_%s.log'%(FLAGS.dataset_name), log_path = FLAGS.train_dir, mode='a')
     
     # use all available gpus
-    gpus = util.tf.get_available_gpus();
+    gpus = util.tf.get_available_gpus(FLAGS.num_gpus);
     num_clones = len(gpus);
     if num_clones > 1 and FLAGS.batch_size % num_clones != 0:
         raise ValueError('If multi gpus are used, the batch_size should be a multiple of the number of gpus.')
@@ -191,7 +191,6 @@ def main(_):
         
         preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
         from preprocessing import preprocessing_factory
-        from preprocessing import ssd_vgg_preprocessing
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
             preprocessing_name, is_training=False)
 
@@ -324,19 +323,20 @@ def main(_):
         variables_to_train = tf_utils.get_variables_to_train(FLAGS)
 
         # and returns a train_tensor and summary_op
-        total_loss, clones_gradients = model_deploy.optimize_clones(
+        total_loss, ssd_loss, clones_gradients = model_deploy.optimize_clones(
             clones,
             optimizer,
             var_list=variables_to_train)
         summaries |= set(model_deploy._add_gradients_summaries(clones_gradients))
         # Add total_loss to summary.
         summaries.add(tf.summary.scalar('total_loss', total_loss))
+        summaries.add(tf.summary.scalar('ssd_loss', ssd_loss))
         # Create gradient updates.
         grad_updates = optimizer.apply_gradients(clones_gradients,
                                                  global_step=global_step)
         update_ops.append(grad_updates)
         update_op = tf.group(*update_ops)
-        train_tensor = control_flow_ops.with_dependencies([update_op], total_loss,
+        train_tensor = control_flow_ops.with_dependencies([update_op], ssd_loss,
                                                           name='train_op')
 
         # Add the summaries from the first clone. These contain the summaries
